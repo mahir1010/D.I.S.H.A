@@ -1,0 +1,7 @@
+.~lock*
+test.py
+*.jpg
+*.png
+.idea
+*.odp
+
