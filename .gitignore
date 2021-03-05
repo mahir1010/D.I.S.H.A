@@ -1,6 +1,9 @@
 .~lock*
-test.py
-*.jpg
-*.png
+**/*.png
+**/*.jpg
 .idea
+*.xopp
+*.xopp~
+*.html
+**/*.xlsx
 *.odp
