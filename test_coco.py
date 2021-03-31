@@ -31,6 +31,8 @@ table{
   table-layout: fixed;
   border-spacing:5px;
   margin:auto;
+  font-size: 20px;
+
 }
 
 th{
@@ -44,14 +46,15 @@ th{
   box-shadow: 3px 3px 5px 6px #ccc;
 }
 td{
-  padding: 15px;
+  padding: 5px;
   text-align: left;
   vertical-align:middle;
   font-weight: bolder;
-  font-size: 14px;
   color: #212121;
   border-bottom: solid 1px rgba(0,0,0,0.1);
   box-shadow: 3px 3px 5px 6px #adabab;
+  min-width: 170px;
+  text-align: center;
 }
 
 
@@ -505,6 +508,10 @@ for imagePath in path:
     cv2.imwrite('crop_{}.png'.format(name[0]), crop)
     ################################################################
     dataframe = main_add_cols(dataframe) ### COSMIN
+    # print(dataframe.columns)
+    # dataframe = dataframe[["Coordinate", "TF1", "TF2", "Intensity", "Image",
+    #                        ref_tf1_emp_coord]]
+    dataframe = dataframe.drop(columns=["Detection", "normalized", "raw_Intensity"])
     ################################################################
     opHtml = html.format(name[0], css,
                          dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, 
