@@ -163,7 +163,7 @@ def get_tf1_empty(row_df, df_input): # and score and im # 1 12 A H
     
     corner_plates = first_match_tf1_empty["Coordinate"].apply(filter_corner_plates)
     # print("tf1 empty before corner plate filtering : {}".format(first_match_tf1_empty))
-    first_match_tf1_empty = first_match_tf1_empty[list(corner_plates)]
+    # first_match_tf1_empty = first_match_tf1_empty[list(corner_plates)]
     # print("tf1 empty after corner plate filtering : {}".format(first_match_tf1_empty))
     # print(first_match_tf1_empty)
     
@@ -180,7 +180,7 @@ def get_tf2_empty(row_df, df_input): # and score and im
                                           & (df_input['TF1'] == str(row_df["TF1"]))])
     
     corner_plates = first_match_tf2_empty["Coordinate"].apply(filter_corner_plates)
-    first_match_tf2_empty = first_match_tf2_empty[list(corner_plates)]
+    # first_match_tf2_empty = first_match_tf2_empty[list(corner_plates)]
     
     if first_match_tf2_empty.empty:
         return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
@@ -359,7 +359,7 @@ for imagePath in path:
     # plt.figure(133)
     # plt.hist(gray.ravel(),256,[0,256])
     # plt.show()
-    # cv2.imwrite(name[0]+"_hsv.png",hsvImage)
+    # cv2.imwrite(name[0]+"_hsv.png",hsvImage)AB_HetY1Hpilot3-5_5mm_3AT_X-gal_7d
     # cv2.imwrite(name[0]+"_r.png",((crop[:,:,2]<thresh1)*crop[:,:,2]))
     # cv2.imwrite(name[0]+"_hsv.png",hsvImage)
     # cv2.imwrite(name[0]+"_r.png",rgbImage)
@@ -489,6 +489,7 @@ for imagePath in path:
     dataframe.to_excel(name[0] + ".xlsx",index=False)
     # dataframe.insert(5,"Image",outputImage)
     dataframe["Image"] =  outputImage  
+    # print(dataframe['Image'])
     # index = getIndex("1-B6",xpeaks,ypeaks)
     # cv2.imwrite(name[0]+"_1-B6.png",crop[index[1][0]:index[1][1],index[0][0]:index[0][1]])
     for i, p in enumerate(xpeaks):
@@ -506,15 +507,15 @@ for imagePath in path:
     dataframe = main_add_cols(dataframe) ### COSMIN
     ################################################################
     opHtml = html.format(name[0], css,
-                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, Intensity=getTruth)))
+                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, 
+                                                                         Intensity=getTruth, 
+                                                                         ref_tf1_emp_Image=imageTageGenerator,
+                                                                         ref_tf2_emp_Image=imageTageGenerator,
+                                                                         ref_emp_emp_Image=imageTageGenerator)))
     file = open('{}.html'.format(name[0]), "w")
     file.write(opHtml)
     file.close()
     dataframes.append(dataframe)
-# print(dataframes[0]['Coordinate'])
-# get_tf1_empty(dataframes[0])
-
-# dataframes = [main_add_cols(elem) for elem in dataframes]#    main_add_cols(dataframes[0])    # temp  = test_tf1_empty[0]
 
 for dataframe in dataframes:
     for intensity,path in zip(dataframe.Intensity,dataframe.Image):
