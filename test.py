@@ -382,10 +382,10 @@ for imagePath in path:
     # outputIntensity = 1/np.exp(outputIntensity)
     # outputIntensity = np.interp(outputIntensity, (outputIntensity.min(), outputIntensity.max()), (0, 100))
     detected = genOutputIntensity > activityThreshold
-    dataframe["Detection"] = detected
+    #dataframe["Detection"] = detected
     dataframe["Intensity"] = genOutputIntensity
-    dataframe["normalized"]=normalized
-    dataframe["raw_Intensity"] = outputIntensity
+    #dataframe["normalized"]=normalized
+    #dataframe["raw_Intensity"] = outputIntensity
     dataframe.to_excel(name[0] + ".xlsx",index=False)
     # dataframe.insert(5,"Image",outputImage)
     dataframe["Image"] = outputImage
