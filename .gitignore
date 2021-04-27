@@ -7,3 +7,6 @@
 *.html
 **/*.xlsx
 *.odp
+uploads
+__pycache__
+output

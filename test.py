@@ -72,14 +72,68 @@ section{
 ::-webkit-scrollbar-thumb {
     -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
 }'''
-html = '''<html><head><title>{0}</title><style>{1}</style></head><body><div>{2}<div><body></html'''
-
+html = '''<html><head><title>{0}</title><style>{1}</style></head><body><div>{2}<div><script>{3}</script><body></html>'''
+js='''
+const headers = document.querySelectorAll('th');
+      [].forEach.call(headers, function(header, index) {
+          header.addEventListener('click', function() {
+          if (header.innerHTML.toLowerCase()!="image")
+              sortColumn(index);
+          });
+      });
+      const tableBody = document.querySelector('tbody');
+      const rows = tableBody.querySelectorAll('tr');
+      
+      const sortColumn = function(index) {
+          // Clone the rows
+          const newRows = Array.from(rows);
+      
+          // Sort rows by the content of cells
+          newRows.sort(function(rowA, rowB) {
+              // Get the content of cells
+              var rowA = rowA.querySelectorAll('td')[index-1]
+              while(rowA.children.length!=0){
+                rowA=rowA.children[0]
+              }
+              cellA=rowA.innerHTML
+              var rowB = rowB.querySelectorAll('td')[index-1]
+              while(rowB.children.length!=0){
+                rowB=rowB.children[0]
+              }
+              cellB=rowB.innerHTML
+              if (!Number.isNaN(Number.parseFloat(cellA))){
+                    cellA=Number.parseFloat(cellA)
+                  }
+                  if (!Number.isNaN(Number.parseFloat(cellB))){
+                    cellB=Number.parseFloat(cellB)
+                  }
+              switch (true) {
+                  
+                  case cellA > cellB: return 1;
+                  case cellA < cellB: return -1;
+                  case cellA === cellB: return 0;
+              }
+          });
+      
+          // Remove old rows
+          [].forEach.call(rows, function(row) {
+              tableBody.removeChild(row);
+          });
+      
+          // Append new row
+          newRows.forEach(function(newRow) {
+              tableBody.appendChild(newRow);
+          });
+      };
+'''
 
 def getIndex(inp, rows, cols):
     index = inp.split("-")
 
     yIndex = row2IndexMap[index[1][0]]
     xIndex = int(index[1][1:]) - 1
+    imageIndex=(float(index[0])-1)//4
+    index[0]=str(((float(index[0])-1)%4)+1)
     if index[0] == "1":
         xIndex = 4 * xIndex
         yIndex = 4 * yIndex
@@ -97,7 +151,7 @@ def getIndex(inp, rows, cols):
         for j in range(2):
             colonies.append([[rows[xIndex + i] - rows[xIndex], rows[xIndex + 1 + i] - rows[xIndex]],
                              [cols[yIndex + j] - cols[yIndex], cols[yIndex + j + 1] - cols[yIndex]]])
-    return [[rows[xIndex], rows[xIndex + 2]], [cols[yIndex], cols[yIndex + 2]]], colonies
+    return imageIndex,[[rows[xIndex], rows[xIndex + 2]], [cols[yIndex], cols[yIndex + 2]]], colonies
 
 
 import glob
@@ -124,7 +178,7 @@ def genPercentage(val):
 
 def getTruth(val):
     global activityThreshold
-    if val < activityThreshold:
+    if val <= activityThreshold:
         return '<b style="color:red;">' + str(round(val, 3)) + '</b>'
     else:
         return '<b style="color:green;">' + str(round(val, 3)) + '</b>'
@@ -180,7 +234,7 @@ def createProjectionImages(gray, xProj, yProj, path='./'):
         cv2.line(blankImage, (column, 0), (column, int(xProj[column])), (255, 255, 255), 1)
     cv2.imwrite(path + 'vert.jpg', blankImage)
 
-activityThreshold = 0.01
+activityThreshold = 0.37047
 
 if len(sys.argv) == 1:
     print("Usage test.py <path_to_images>")
@@ -266,11 +320,11 @@ for imagePath in path:
     # cv2.imwrite(name[0]+"_r.png",rgbImage)
     outputImage = []
     Path(outputPath).mkdir(parents=True, exist_ok=True)
-    reference, refCols = getIndex("3-B7", xpeaks, ypeaks)
+    _,reference, refCols = getIndex("3-B7", xpeaks, ypeaks)
 
     for c in df["Coordinate"]:
         if (len(c.split("-")[1]) > 1):
-            index, colonies = getIndex(c, xpeaks, ypeaks)
+            _,index, colonies = getIndex(c, xpeaks, ypeaks)
             roi = (hsvCrop[index[1][0]:index[1][1], index[0][0]:index[0][1]])[:, :, 2]
             hsvImage = np.zeros_like(roi, dtype=np.uint8)
             for ix, colony in enumerate(colonies):
@@ -357,40 +411,11 @@ for imagePath in path:
             cv2.imwrite(outputPath + "/" + c + "_final.png", roi)
             cv2.imwrite(outputPath + "/" + c + "_preMask.png", inv)
             cv2.imwrite(outputPath + "/" + c + "_mask.png", hsvImage)
-            outputImage.append(outputPath + "/" + c + ".png")
+            outputImage.append(outputPath[9:] + "/" + c + ".png")
         else:
             outputIntensity.append(math.nan)
             outputPercent.append(0)
             outputImage.append(None)
-    # outputPercent = [outputPercent[i] if outputPercent[i] is not None and outputPercent[i] > 0 else 0 for i in range(len(outputPercent))]
-    # outputPercent=minmax_scale(outputPercent)
-    # outputIntensity=minmax_scale(outputIntensity)
-    # outputPercent = (np.round(outputPercent, 2) * 100).astype(np.uint8)
-    # dataframe.insert(3,"percent", outputPercent)
-    outputIntensity = np.nan_to_num(outputIntensity, nan=np.nanmin(outputIntensity))
-    normalized=preprocessing.normalize([outputIntensity])[0]
-    # referenceAdded = np.insert(outputIntensity,len(outputIntensity),729976.263)
-    l = 1 / 600581.5426
-    referenceAdded = 1-1/np.exp(l*outputIntensity)
-    # referenceAdded = l/np.exp(l * normalized)
-    genOutputIntensity=referenceAdded*100
-    # base5=np.vectorize(lambda x :5 * round(x / 5))
-    # outputIntensity=base5(outputIntensity)
-    # outputIntensity = scipy.stats.zscore(outputIntensity)
-    # l = 1/np.mean(outputIntensity)
-    # outputIntensity = 1-1/np.exp(l*outputIntensity)
-    # outputIntensity = 1/np.exp(outputIntensity)
-    # outputIntensity = np.interp(outputIntensity, (outputIntensity.min(), outputIntensity.max()), (0, 100))
-    detected = genOutputIntensity > activityThreshold
-    #dataframe["Detection"] = detected
-    dataframe["Intensity"] = genOutputIntensity
-    #dataframe["normalized"]=normalized
-    #dataframe["raw_Intensity"] = outputIntensity
-    dataframe.to_excel(name[0] + ".xlsx",index=False)
-    # dataframe.insert(5,"Image",outputImage)
-    dataframe["Image"] = outputImage
-    # index = getIndex("1-B6",xpeaks,ypeaks)
-    # cv2.imwrite(name[0]+"_1-B6.png",crop[index[1][0]:index[1][1],index[0][0]:index[0][1]])
     for i, p in enumerate(xpeaks):
         if i % 4 == 0:
             cv2.line(crop, (p, 0), (p, crop.shape[1] - 1), (0, 0, 255), thickness=3)
@@ -402,9 +427,27 @@ for imagePath in path:
         else:
             cv2.line(crop, (0, p), (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
     cv2.imwrite('crop_{}.png'.format(name[0]), crop)
+    outputIntensity = np.nan_to_num(outputIntensity, nan=np.nanmin(outputIntensity))
+    normalized=outputIntensity/12767.85706
+    normalized=np.subtract(normalized,63.73679294)/192.786552
+    # referenceAdded = np.insert(outputIntensity,len(outputIntensity),729976.263)
+    # l = 1 / 600581.5426
+    # referenceAdded = 1-1/np.exp(l*outputIntensity)
+    genOutputIntensity=np.array(list(map(scipy.stats.norm.ppf, normalized)))
+    detected = genOutputIntensity > activityThreshold
+    #dataframe["Detection"] = detected
+    dataframe["Intensity"] = genOutputIntensity * 100
+    #dataframe["normalized"]=normalized
+    #dataframe["raw_Intensity"] = outputIntensity
+    dataframe.to_excel(name[0] + ".xlsx",index=False)
+    # dataframe.insert(5,"Image",outputImage)
+    dataframe["Image"] = outputImage
+    # index = getIndex("1-B6",xpeaks,ypeaks)
+    # cv2.imwrite(name[0]+"_1-B6.png",crop[index[1][0]:index[1][1],index[0][0]:index[0][1]])
+
     opHtml = html.format(name[0], css,
-                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, Intensity=getTruth)))
-    file = open('{}.html'.format(name[0]), "w")
+                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, Intensity=getTruth)),js)
+    file = open('./output/{}.html'.format(name[0]), "w")
     file.write(opHtml)
     file.close()
     dataframes.append(dataframe)
@@ -414,10 +457,10 @@ for dataframe in dataframes:
             for i in range(10,110,10):
                 if intensity<=i:
                     name = path.split("/")
-                    copyfile(path,clusterPath+str(i)+"/"+str(round(intensity,2))+"_"+(name[-2]+"_"+name[-1]))
+                    copyfile('./output/'+path,clusterPath+str(i)+"/"+str(round(intensity,2))+"_"+(name[-2]+"_"+name[-1]))
                     break
 dataset= pd.concat(dataframes,ignore_index=True)
-dataset=dataset.iloc[:,[3,5,6,7]]
+# dataset=dataset.iloc[:,[3,5,6,7]]
 dataset.to_excel("dataset.xlsx")
 
 
