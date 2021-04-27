@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+    <title>Y1H Assay Analysis</title>
+    <style>
+        .form-horizontal{
+            width:50%;
+            height:50%;
+            margin:0 auto;
+
+        }
+        input{
+            height:30px;
+            border-radius:5px;
+            margin:10px;
+        }
+    </style>
+</head>
+    <body>
+        <form enctype="multipart/form-data" class="form-horizontal" action="createExperiment" method="post">
+            <fieldset>
+            <!-- Form Name -->
+            <legend>Experiment Information</legend>
+            
+            <!-- Text input-->
+            <div class="form-group">
+              <div class="col-md-4">
+              <input id="experimentName" name="experimentName" type="text" placeholder="Experiment Name" class="form-control input-md" required="">
+              </div>
+            </div>
+             <!-- File Button --> 
+             <div class="form-group">
+                <label class="col-md-4 control-label" for="excelFileButton">Upload Excel File</label>
+                <div class="col-md-4">
+                  <input id="excelFileButton" name="excelFileButton" class="input-file" type="file" required="">
+                </div>
+              </div>
+
+            <!-- File Button --> 
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="imagesButton">Upload Images</label>
+              <div class="col-md-4">
+                <input id="imagesButton" name="imagesButton" class="input-file" type="file" multiple required="">
+              </div>
+            </div>
+            
+            <!-- Button -->
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="submit"></label>
+              <div class="col-md-4">
+                <button id="submit" name="submit" class="btn btn-primary">Submit</button>
+              </div>
+            </div>
+            
+            </fieldset>
+            </form>
+<ul>
+    {% for file in files %}
+    <li>
+        <a href="{{ '/display/' + file }}">
+            {{ (request.path + '/' if request.path != '/' else '') + file }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+    </body>
+</html>

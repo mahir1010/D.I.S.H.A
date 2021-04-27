@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<head>
+    <title>Y1H Assay Analysis</title>
+</head>
+<body>
+<ul>
+    {% for file in files %}
+    <li>
+        <a href="{{ (request.path + '/' if request.path != '/' else '') + file }}">
+            {{ file }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+</body>
+</html>
