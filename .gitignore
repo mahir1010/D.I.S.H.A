@@ -10,3 +10,5 @@
 uploads
 __pycache__
 output
+test_coco.py
+test.py
