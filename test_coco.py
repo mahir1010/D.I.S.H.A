@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 import matplotlib.pyplot as plt
-from shutil import copyfile,rmtree
+from shutil import copyfile, rmtree
 
 import sklearn
 from sklearn import preprocessing
@@ -17,7 +17,8 @@ import glob
 
 row2IndexMap = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7}
 excel_file = "./data/HetY1H Pilot TF coordinates.xlsx"
-df = pd.read_excel(excel_file, engine='openpyxl')  # , index_col=None, header=None)
+# , index_col=None, header=None)
+df = pd.read_excel(excel_file, engine='openpyxl')
 css = '''
 h1{
   font-size: 30px;
@@ -31,6 +32,8 @@ table{
   table-layout: fixed;
   border-spacing:5px;
   margin:auto;
+  font-size: 18px;
+
 }
 
 th{
@@ -44,14 +47,15 @@ th{
   box-shadow: 3px 3px 5px 6px #ccc;
 }
 td{
-  padding: 15px;
+  padding: 5px;
   text-align: left;
   vertical-align:middle;
   font-weight: bolder;
-  font-size: 14px;
   color: #212121;
   border-bottom: solid 1px rgba(0,0,0,0.1);
   box-shadow: 3px 3px 5px 6px #adabab;
+  min-width: 170px;
+  text-align: center;
 }
 
 
@@ -103,49 +107,46 @@ def getIndex(inp, rows, cols):
     return [[rows[xIndex], rows[xIndex + 2]], [cols[yIndex], cols[yIndex + 2]]], colonies
 
 
-# def filter_empty_empty(df_input_row):
-#     if  df_input_row["TF1"] = "empty" or 
+def main_add_cols(df_input):
 
-def main_add_cols(df_input): 
+    df_input_no_emp = df_input.loc[(
+        df_input['TF1'] != "empty") & (df_input['TF2'] != "empty")]
 
-    # retrieve_tfs = lambda x : get_tf1_empty 
-    # test = df_input.apply(retrieve_tfs)
-            
-    df_tf1_empty = df_input.apply(
-        lambda row: get_tf1_empty(row, df_input) if str(row['TF1']) != 'empty' and str(row['TF2']) != 'empty' else pd.Series(dtype=row.dtype).reindex_like(row),
+    
+    df_tf1_empty = df_input_no_emp.apply(
+        lambda row: get_tf1_empty(row, df_input),
         axis=1
     )
-    
-    df_tf2_empty = df_input.apply(
-        lambda row: get_tf2_empty(row, df_input) if row['TF1'] != 'empty' and row['TF2'] != 'empty' else pd.Series(dtype=row.dtype).reindex_like(row),
+
+    df_tf2_empty = df_input_no_emp.apply(
+        lambda row: get_tf2_empty(row, df_input),
         axis=1
     )
-    
-    df_empty_empty = df_input.apply(
-        lambda row: get_empty_empty(row, df_input) if row['TF1'] != 'empty' and row['TF2'] != 'empty' else pd.Series(dtype=row.dtype).reindex_like(row),
+
+    df_empty_empty = df_input_no_emp.apply(
+        lambda row: get_empty_empty(row, df_input),
         axis=1
     )
-    
-    df_input["ref_tf1_emp_coord"] = [elem for elem in list(df_tf1_empty["Coordinate"])]
-    df_input["ref_tf1_emp_tf1_val"] = [elem for elem in list(df_tf1_empty["TF1"])]
-    df_input["ref_tf1_emp_tf2_val"] = [elem for elem in list(df_tf1_empty["TF2"])]
-    df_input["ref_tf1_emp_Intensity"] = [elem for elem in list(df_tf1_empty["Intensity"])]
-    df_input["ref_tf1_emp_Image"] = [str(elem) for elem in list(df_tf1_empty["Image"])]
+
+    df_input_no_emp["ref_tf1_emp_coord"] = [elem for elem in list(df_tf1_empty["Coordinate"])]
+    df_input_no_emp["ref_tf1_emp_tf1_val"] = [elem for elem in list(df_tf1_empty["TF1"])]
+    df_input_no_emp["ref_tf1_emp_tf2_val"] = [elem for elem in list(df_tf1_empty["TF2"])]
+    df_input_no_emp["ref_tf1_emp_Intensity"] = [elem for elem in list(df_tf1_empty["Intensity"])]
+    df_input_no_emp["ref_tf1_emp_Image"] = [str(elem) for elem in list(df_tf1_empty["Image"])]
     #####################
-    df_input["ref_tf2_emp_coord"] = [elem for elem in list(df_tf2_empty["Coordinate"])]
-    df_input["ref_tf2_emp_tf2_val"] = [elem for elem in list(df_tf2_empty["TF2"])]
-    df_input["ref_tf2_emp_tf1_val"] = [elem for elem in list(df_tf2_empty["TF1"])]
-    df_input["ref_tf2_emp_Intensity"] = [elem for elem in list(df_tf2_empty["Intensity"])]
-    df_input["ref_tf2_emp_Image"] = [str(elem) for elem in list(df_tf2_empty["Image"])]
+    df_input_no_emp["ref_tf2_emp_coord"] = [elem for elem in list(df_tf2_empty["Coordinate"])]
+    df_input_no_emp["ref_tf2_emp_tf1_val"] = [elem for elem in list(df_tf2_empty["TF1"])]
+    df_input_no_emp["ref_tf2_emp_tf2_val"] = [elem for elem in list(df_tf2_empty["TF2"])]
+    df_input_no_emp["ref_tf2_emp_Intensity"] = [elem for elem in list(df_tf2_empty["Intensity"])]
+    df_input_no_emp["ref_tf2_emp_Image"] = [str(elem) for elem in list(df_tf2_empty["Image"])]
     #####################
-    df_input["ref_emp_emp_coord"] = [elem for elem in list(df_empty_empty["Coordinate"])]
-    df_input["ref_emp_emp_tf1_val"] = [elem for elem in list(df_empty_empty["TF1"])]
-    df_input["ref_emp_emp_tf2_val"] = [elem for elem in list(df_empty_empty["TF2"])]
-    df_input["ref_emp_emp_Intensity"] = [elem for elem in list(df_empty_empty["Intensity"])]
-    df_input["ref_emp_emp_Image"] = [str(elem) for elem in list(df_empty_empty["Image"])]
-    
-    
-    return df_input
+    df_input_no_emp["ref_emp_emp_coord"] = [elem for elem in list(df_empty_empty["Coordinate"])]
+    df_input_no_emp["ref_emp_emp_tf1_val"] = [elem for elem in list(df_empty_empty["TF1"])]
+    df_input_no_emp["ref_emp_emp_tf2_val"] = [elem for elem in list(df_empty_empty["TF2"])]
+    df_input_no_emp["ref_emp_emp_Intensity"] = [elem for elem in list(df_empty_empty["Intensity"])]
+    df_input_no_emp["ref_emp_emp_Image"] = [str(elem) for elem in list(df_empty_empty["Image"])]
+
+    return df_input_no_emp
 
 def filter_corner_plates(input_coord):
     input_coord = input_coord.split('-')
@@ -156,50 +157,52 @@ def filter_corner_plates(input_coord):
     else:
         return False
 
-def get_tf1_empty(row_df, df_input): # and score and im # 1 12 A H
+
+def get_tf1_empty(row_df, df_input):  # and score and im # 1 12 A H
     # print("corner plates : {}".format(corner_plates))
-    first_match_tf1_empty = (df_input.loc[(df_input['TF1'] == "empty") 
+    first_match_tf1_empty = (df_input.loc[(df_input['TF1'] == "empty")
                                           & (df_input['TF2'] == str(row_df["TF2"]))])
-    
-    corner_plates = first_match_tf1_empty["Coordinate"].apply(filter_corner_plates)
-    # print("tf1 empty before corner plate filtering : {}".format(first_match_tf1_empty))
-    # first_match_tf1_empty = first_match_tf1_empty[list(corner_plates)]
-    # print("tf1 empty after corner plate filtering : {}".format(first_match_tf1_empty))
-    # print(first_match_tf1_empty)
-    
+
+    corner_plates = first_match_tf1_empty["Coordinate"].apply(
+        filter_corner_plates)
+
     if first_match_tf1_empty.empty:
         return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
     else:
         first_match_tf1_empty = first_match_tf1_empty.reset_index(drop=True)
-        # print("tf1 empty supposed to be non empty and with index : {}".format(first_match_tf1_empty))
-        # print(first_match_tf1_empty.index)
         return first_match_tf1_empty.iloc[0]
-    
-def get_tf2_empty(row_df, df_input): # and score and im
-    first_match_tf2_empty = (df_input.loc[(df_input['TF2'] == "empty") 
+
+
+def get_tf2_empty(row_df, df_input):  # and score and im
+    first_match_tf2_empty = (df_input.loc[(df_input['TF2'] == "empty")
                                           & (df_input['TF1'] == str(row_df["TF1"]))])
-    
-    corner_plates = first_match_tf2_empty["Coordinate"].apply(filter_corner_plates)
+
+    corner_plates = first_match_tf2_empty["Coordinate"].apply(
+        filter_corner_plates)
     # first_match_tf2_empty = first_match_tf2_empty[list(corner_plates)]
-    
+
     if first_match_tf2_empty.empty:
         return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
     else:
         first_match_tf2_empty = first_match_tf2_empty.reset_index(drop=True)
         return first_match_tf2_empty.iloc[0]
-    
-def get_empty_empty(row_df, df_input): # and score and im
-    first_match_empty_empty = (df_input.loc[(df_input['TF2'] == "empty") 
+
+
+def get_empty_empty(row_df, df_input):  # and score and im
+    first_match_empty_empty = (df_input.loc[(df_input['TF2'] == "empty")
                                             & (df_input['TF1'] == "empty")])
-    
-    corner_plates = first_match_empty_empty["Coordinate"].apply(filter_corner_plates)
+
+    corner_plates = first_match_empty_empty["Coordinate"].apply(
+        filter_corner_plates)
     first_match_empty_empty = first_match_empty_empty[list(corner_plates)]
 
     if first_match_empty_empty.empty:
         return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
     else:
-        first_match_empty_empty = first_match_empty_empty.reset_index(drop=True)
+        first_match_empty_empty = first_match_empty_empty.reset_index(
+            drop=True)
         return first_match_empty_empty.iloc[0]
+
 
 def rescaleIntensity(img, range):
     table = np.interp(np.arange(256), range, [0, 255]).astype('uint8')
@@ -230,7 +233,8 @@ def getTruth(val):
 
 def getPeaks(proj, thresh1, thresh2):
     gradient = np.gradient(proj)
-    gradient = (np.logical_or(gradient > thresh1, gradient < thresh2)) * gradient
+    gradient = (np.logical_or(gradient > thresh1,
+                gradient < thresh2)) * gradient
     peaks = []
     isPeak = False
     lastPeak = 0
@@ -271,12 +275,15 @@ def createProjectionImages(gray, xProj, yProj, path='./'):
     height, width = gray.shape
     blankImage = np.zeros((height, width, 3), dtype=np.uint8)
     for row in range(height):
-        cv2.line(blankImage, (0, row), (int(yProj[row]), row), (255, 255, 255), 1)
+        cv2.line(blankImage, (0, row),
+                 (int(yProj[row]), row), (255, 255, 255), 1)
     cv2.imwrite(path + 'Horz.jpg', blankImage)
     blankImage = np.zeros((height, width, 3), dtype=np.uint8)
     for column in range(width):
-        cv2.line(blankImage, (column, 0), (column, int(xProj[column])), (255, 255, 255), 1)
+        cv2.line(blankImage, (column, 0),
+                 (column, int(xProj[column])), (255, 255, 255), 1)
     cv2.imwrite(path + 'vert.jpg', blankImage)
+
 
 activityThreshold = 0.01
 
@@ -286,13 +293,13 @@ if len(sys.argv) == 1:
 p = sys.argv[1]
 p = p[:-1] if p[-1] == "/" else p
 path = glob.glob(sys.argv[1] + "/*.JPG")
-dataframes=[]
+dataframes = []
 for imagePath in path:
     name = Path(imagePath).stem
     name = name.split('.')
     outputPath = "./output/{}".format(name[0])
     clusterPath = "./output/cluster/"
-    rmtree(clusterPath,ignore_errors=True)
+    rmtree(clusterPath, ignore_errors=True)
     for i in range(10, 110, 10):
         Path(clusterPath + str(i)).mkdir(parents=True, exist_ok=True)
     dataframe = pd.read_excel(name[0] + ".xlsx", engine='openpyxl')
@@ -329,8 +336,10 @@ for imagePath in path:
     # cv2.waitKey()
     xProj, yProj = getHistogramProjection(gray)
     smooth = 5
-    xProj = np.convolve(xProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
-    yProj = np.convolve(yProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
+    xProj = np.convolve(
+        xProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
+    yProj = np.convolve(
+        yProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
     xProj = (xProj > 20) * xProj
     yProj = (yProj > 20) * yProj
     # for i in range(len(xProj)-2):
@@ -370,42 +379,50 @@ for imagePath in path:
     for c in df["Coordinate"]:
         if (len(c.split("-")[1]) > 1):
             index, colonies = getIndex(c, xpeaks, ypeaks)
-            roi = (hsvCrop[index[1][0]:index[1][1], index[0][0]:index[0][1]])[:, :, 2]
+            roi = (hsvCrop[index[1][0]:index[1][1],
+                   index[0][0]:index[0][1]])[:, :, 2]
             hsvImage = np.zeros_like(roi, dtype=np.uint8)
             for ix, colony in enumerate(colonies):
-                subRoi = roi[colony[1][0]:colony[1][1], colony[0][0]:colony[0][1]]
+                subRoi = roi[colony[1][0]:colony[1]
+                             [1], colony[0][0]:colony[0][1]]
                 levelRange = getLevelRange(subRoi)
                 # print(levelRange[1]-levelRange[0])
                 if True:
-                    colonyProcessed = rescaleIntensity(subRoi, [0,levelRange[1]])
+                    colonyProcessed = rescaleIntensity(
+                        subRoi, [0, levelRange[1]])
                     # cv2.imshow('test', colonyProcessed)
                     # cv2.waitKey()
                     # colonyProcessed = cv2.medianBlur(colonyProcessed, 5)
-                    colonyProcessed = cv2.GaussianBlur(colonyProcessed, (3, 3), 1.5)
+                    colonyProcessed = cv2.GaussianBlur(
+                        colonyProcessed, (3, 3), 1.5)
                     # cv2.imshow('test', colonyProcessed)
                     # cv2.waitKey()
-                    test = getLevelRange(colonyProcessed,0.05)
+                    test = getLevelRange(colonyProcessed, 0.05)
                     # if(c=="1-D6"):
                     #     print(name[0],test)
-                    if test[1]-test[0]>=127:
-                        test[0]=127
+                    if test[1]-test[0] >= 127:
+                        test[0] = 127
                     # test[0]=np.mean(test)
-                    colonyProcessed = cv2.threshold(colonyProcessed, test[0], test[1], cv2.THRESH_BINARY_INV)[1]
+                    colonyProcessed = cv2.threshold(
+                        colonyProcessed, test[0], test[1], cv2.THRESH_BINARY_INV)[1]
                     # plt.imshow(colonyProcessed)
                     # plt.pause(0.01)
                     # colonyProcessed = cv2.erode(colonyProcessed,np.ones((3,3),np.uint8),iterations=1)
-                    contours, hierarchy = cv2.findContours(colonyProcessed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                    center=np.divide(colonyProcessed.shape,2)
-                    centerContour=None
-                    minDistance=colonyProcessed.size
+                    contours, hierarchy = cv2.findContours(
+                        colonyProcessed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    center = np.divide(colonyProcessed.shape, 2)
+                    centerContour = None
+                    minDistance = colonyProcessed.size
                     for contour in contours:
                         moments = cv2.moments(contour)
-                        if moments["m00"]!=0:
-                            centroid= [int(moments["m10"] / moments["m00"]),int(moments["m01"] / moments["m00"])]
-                            distance=math.sqrt(np.sum(np.square(centroid-center)))
-                            if distance<minDistance:
-                                centerContour=contour
-                                minDistance=distance
+                        if moments["m00"] != 0:
+                            centroid = [
+                                int(moments["m10"] / moments["m00"]), int(moments["m01"] / moments["m00"])]
+                            distance = math.sqrt(
+                                np.sum(np.square(centroid-center)))
+                            if distance < minDistance:
+                                centerContour = contour
+                                minDistance = distance
                         # p=cv2.arcLength(contour,True)
                         # a=cv2.contourArea(contour)
                         # if p==0 or a==0 :
@@ -414,11 +431,14 @@ for imagePath in path:
                         # if math.fabs(1-circularity)<0.4 and maxArea<a:
                         #     circle=contour
                         #     maxArea=a
-                    colonyProcessed = np.zeros_like(colonyProcessed,dtype=np.uint8)
+                    colonyProcessed = np.zeros_like(
+                        colonyProcessed, dtype=np.uint8)
                     # plt.show()
 
-                    colonyProcessed=cv2.drawContours(colonyProcessed,[centerContour],0,(255,255,255),cv2.FILLED)
-                    hsvImage[colony[1][0]:colony[1][1], colony[0][0]:colony[0][1]] = colonyProcessed
+                    colonyProcessed = cv2.drawContours(
+                        colonyProcessed, [centerContour], 0, (255, 255, 255), cv2.FILLED)
+                    hsvImage[colony[1][0]:colony[1][1], colony[0]
+                             [0]:colony[0][1]] = colonyProcessed
                     # if levelRange[1]-levelRange[0]<18:
                     #     print(levelRange[1] - levelRange[0], levelRange)
                     #     print(name[0],c)
@@ -429,22 +449,23 @@ for imagePath in path:
                     # cv2.imshow('test4',crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
 
             # inv = cv2.bitwise_not(roi)
-            inv =(hsvCrop[index[1][0]:index[1][1], index[0][0]:index[0][1]])[:, :, 0]
-            inv = rescaleIntensity(inv,[getLevelRange(inv)[0],255])
-            invRange = getLevelRange(inv,0)
+            inv = (hsvCrop[index[1][0]:index[1][1],
+                   index[0][0]:index[0][1]])[:, :, 0]
+            inv = rescaleIntensity(inv, [getLevelRange(inv)[0], 255])
+            invRange = getLevelRange(inv, 0)
             if c == "1-B9" or c == "1-B8":
                 # print(c,invRange) # TO UNCOMMENT --------------------------------------------------------------------------------------
                 pass
-            if invRange[1]-invRange[0]<3:
-                inv = np.zeros_like(inv,dtype=np.uint8)
+            if invRange[1]-invRange[0] < 3:
+                inv = np.zeros_like(inv, dtype=np.uint8)
             roi = cv2.bitwise_and(inv, inv, mask=hsvImage)
             areaImage = roi.copy()
-            areaImage[areaImage>0] = 1
+            areaImage[areaImage > 0] = 1
             area = np.sum(areaImage)
             intensity = roi.copy()
             # hsvImage = cv2.bitwise_not(hsvImage)
             # roi = cv2.bitwise_and(roi,roi,mask=hsvImage)
-            intensity = np.divide(intensity,np.subtract(256,intensity))
+            intensity = np.divide(intensity, np.subtract(256, intensity))
             outputIntensity.append(np.sum(intensity)*area)
             # outputPercent.append(np.mean(roi) - reference)
             # if c=="2-F7":
@@ -453,7 +474,8 @@ for imagePath in path:
             #     cv2.imshow('inv',inv)
             #     cv2.waitKey()
             #     print('here')
-            cv2.imwrite(outputPath + "/" + c + ".png", crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
+            cv2.imwrite(outputPath + "/" + c + ".png",
+                        crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
             cv2.imwrite(outputPath + "/" + c + "_final.png", roi)
             cv2.imwrite(outputPath + "/" + c + "_preMask.png", inv)
             cv2.imwrite(outputPath + "/" + c + "_mask.png", hsvImage)
@@ -467,13 +489,14 @@ for imagePath in path:
     # outputIntensity=minmax_scale(outputIntensity)
     # outputPercent = (np.round(outputPercent, 2) * 100).astype(np.uint8)
     # dataframe.insert(3,"percent", outputPercent)
-    outputIntensity = np.nan_to_num(outputIntensity, nan=np.nanmin(outputIntensity))
-    normalized=preprocessing.normalize([outputIntensity])[0]
+    outputIntensity = np.nan_to_num(
+        outputIntensity, nan=np.nanmin(outputIntensity))
+    normalized = preprocessing.normalize([outputIntensity])[0]
     # referenceAdded = np.insert(outputIntensity,len(outputIntensity),729976.263)
     l = 1 / 600581.5426
     referenceAdded = 1-1/np.exp(l*outputIntensity)
     # referenceAdded = l/np.exp(l * normalized)
-    genOutputIntensity=referenceAdded*100
+    genOutputIntensity = referenceAdded*100
     # base5=np.vectorize(lambda x :5 * round(x / 5))
     # outputIntensity=base5(outputIntensity)
     # outputIntensity = scipy.stats.zscore(outputIntensity)
@@ -484,31 +507,40 @@ for imagePath in path:
     detected = genOutputIntensity > activityThreshold
     #dataframe["Detection"] = detected
     dataframe["Intensity"] = genOutputIntensity
-    #dataframe["normalized"]=normalized
+    # dataframe["normalized"]=normalized
     #dataframe["raw_Intensity"] = outputIntensity
-    dataframe.to_excel(name[0] + ".xlsx",index=False)
+    dataframe.to_excel(name[0] + ".xlsx", index=False)
     # dataframe.insert(5,"Image",outputImage)
-    dataframe["Image"] =  outputImage  
+    dataframe["Image"] = outputImage
     # print(dataframe['Image'])
     # index = getIndex("1-B6",xpeaks,ypeaks)
     # cv2.imwrite(name[0]+"_1-B6.png",crop[index[1][0]:index[1][1],index[0][0]:index[0][1]])
     for i, p in enumerate(xpeaks):
         if i % 4 == 0:
-            cv2.line(crop, (p, 0), (p, crop.shape[1] - 1), (0, 0, 255), thickness=3)
+            cv2.line(crop, (p, 0),
+                     (p, crop.shape[1] - 1), (0, 0, 255), thickness=3)
         else:
-            cv2.line(crop, (p, 0), (p, crop.shape[1] - 1), (0, 0, 0), thickness=1)
+            cv2.line(crop, (p, 0),
+                     (p, crop.shape[1] - 1), (0, 0, 0), thickness=1)
     for i, p in enumerate(ypeaks):
         if i % 4 == 0:
-            cv2.line(crop, (0, p), (crop.shape[1] - 1, p), (0, 0, 255), thickness=3)
+            cv2.line(crop, (0, p),
+                     (crop.shape[1] - 1, p), (0, 0, 255), thickness=3)
         else:
-            cv2.line(crop, (0, p), (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
+            cv2.line(crop, (0, p),
+                     (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
     cv2.imwrite('crop_{}.png'.format(name[0]), crop)
     ################################################################
-    dataframe = main_add_cols(dataframe) ### COSMIN
+    dataframe = main_add_cols(dataframe)  # COSMIN
+    # print(dataframe.columns)
+    # dataframe = dataframe[["Coordinate", "TF1", "TF2", "Intensity", "Image",
+    #                        ref_tf1_emp_coord]]
+    dataframe = dataframe.drop(
+        columns=["Detection", "normalized", "raw_Intensity"])
     ################################################################
     opHtml = html.format(name[0], css,
-                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator, 
-                                                                         Intensity=getTruth, 
+                         dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator,
+                                                                         Intensity=getTruth,
                                                                          ref_tf1_emp_Image=imageTageGenerator,
                                                                          ref_tf2_emp_Image=imageTageGenerator,
                                                                          ref_emp_emp_Image=imageTageGenerator)))
@@ -518,33 +550,33 @@ for imagePath in path:
     dataframes.append(dataframe)
 
 for dataframe in dataframes:
-    for intensity,path in zip(dataframe.Intensity,dataframe.Image):
+    for intensity, path in zip(dataframe.Intensity, dataframe.Image):
         if path is not None:
-            for i in range(10,110,10):
-                if intensity<=i:
+            for i in range(10, 110, 10):
+                if intensity <= i:
                     name = path.split("/")
-                    copyfile(path,clusterPath+str(i)+"/"+str(round(intensity,2))+"_"+(name[-2]+"_"+name[-1]))
+                    copyfile(path, clusterPath+str(i)+"/" +
+                             str(round(intensity, 2))+"_"+(name[-2]+"_"+name[-1]))
                     break
-dataset= pd.concat(dataframes,ignore_index=True)
-dataset=dataset.iloc[:,[3,5,6,7]]
+dataset = pd.concat(dataframes, ignore_index=True)
+dataset = dataset.iloc[:, [3, 5, 6, 7]]
 dataset.to_excel("dataset.xlsx")
 
-
-    # plt.figure(111)
-    # plt.bar(range(len(yProj)),yGrad)
-    #
-    # # xGrad = np.gradient(xGrad)
-    # # plt.bar(range(len(xProj)),xGrad)
-    # plt.figure(131)
-    # plt.bar(range(len(yProj)),yProj)
-    # plt.show()
-    #
-    # plt.figure(111)
-    # plt.bar(range(len(xProj)),xGrad)
-    #
-    # # xGrad = np.gradient(xGrad)
-    # # plt.bar(range(len(xProj)),xGrad)
-    # plt.figure(131)
-    # plt.bar(range(len(xProj)),xProj)
-    # plt.show()
-    # # cv2.waitKey(0)
+# plt.figure(111)
+# plt.bar(range(len(yProj)),yGrad)
+#
+# # xGrad = np.gradient(xGrad)
+# # plt.bar(range(len(xProj)),xGrad)
+# plt.figure(131)
+# plt.bar(range(len(yProj)),yProj)
+# plt.show()
+#
+# plt.figure(111)
+# plt.bar(range(len(xProj)),xGrad)
+#
+# # xGrad = np.gradient(xGrad)
+# # plt.bar(range(len(xProj)),xGrad)
+# plt.figure(131)
+# plt.bar(range(len(xProj)),xProj)
+# plt.show()
+# # cv2.waitKey(0)
