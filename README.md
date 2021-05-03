@@ -14,9 +14,9 @@ The main python file is called [Pipeline.py](https://github.com/mahir1010/Hetero
 
 The [app.py](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/app.py) python file  contains the flask application.
 
-The [data](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/data/) folder contains the same plate images at a different time, with their caracteristics and coordinate location in [HetY1H Pilot TF coordinates.xlsx](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/data/HetY1H Pilot TF coordinates.xlsx).
+The [data](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/data/) folder contains the same plate images at a different time, with their caracteristics and coordinate location in [HetY1H Pilot TF coordinates.xlsx](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/data/HetY1H%20Pilot%20TF%20coordinates.xlsx).
 
-The [templates](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/templates) folder contains html files for the flask application.
+The [templates](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/templates/) folder contains html files for the flask application.
 
 ## Results
 
