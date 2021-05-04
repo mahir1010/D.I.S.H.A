@@ -5,7 +5,6 @@
 *.xopp~
 **/*.xlsx
 *.odp
-uploads
 __pycache__
 output
 test_coco.py
