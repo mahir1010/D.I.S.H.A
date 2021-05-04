@@ -19,7 +19,8 @@ The [data](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/data/
 The [templates](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/templates/) folder contains html files for the flask application.
 
 ## Results
-Through [html_result](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/res_16_5.png) file, we can see that for each image analyzed, for each coordinate, we have its tf1 and tf2, its intensity, its image, and reference quad.
+![html_result](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/res_16_5.png "results")
+With the above image, we can see that for each image analyzed, for each coordinate, we have its tf1 and tf2 values, its raw intensity, its image, and references quad information.
 
 ## Discussion
 Our intensity and area calculation are pretty accurate, but our detection threshold needs some more fine-tuning. Right now, we map our score to an exponential distribution to match Anna's score, but we are currently exploring other approaches, like semi-supervised learning.
