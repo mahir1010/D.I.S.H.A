@@ -9,6 +9,15 @@ To launch the flask application, open a terminal at the root of this directory a
 
 ``` FLASK_APP=app.py flask run ```
 
+![html_form](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/html_form.png "html form")
+
+After that, on your localhost adress, you will be prompted to specify your excel files containing your input images coordinates with respect to the grid cell,
+and the images you want to process. Once it is done, click the submit button.
+
+![output_flask](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/output_flask_all.png "output flask")
+
+The output of the flask application will contain the extracted quads, their mask and pre_mask features, and their corresponding pdfs and html files.
+
 ## Code and repository description
 The main python file is called [Pipeline.py](https://github.com/mahir1010/Heterodimer-Y1H-Analysis/blob/main/Pipeline.py), containing the source code pre-processing the images, generating a grid cell and extracting the intensity and area of each quad.
 
