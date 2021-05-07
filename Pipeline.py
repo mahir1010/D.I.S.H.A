@@ -292,18 +292,19 @@ def process_yeast(output_path,excels_path, template1, template2):
     dataframes = []
     outputPaths=[]
     fileNames=[]
-    clusterPaths=[]
+    # clusterPaths=[]
     for imagePath in path:
         name = Path(imagePath).stem
         name = name.split('.')
         fileNames.append(name)
         outputPath = os.path.join(output_path, name[0])  # "./output/{}".format(name[0])
+        Path(outputPath).mkdir(parents=True,exist_ok=True)
         outputPaths.append(outputPath)
-        clusterPath = os.path.join(output_path, "cluster/")  # "./output/cluster/"
-        clusterPaths.append(clusterPath)
-        rmtree(clusterPath, ignore_errors=True)
-        for i in range(10, 110, 10):
-            Path(clusterPath + str(i)).mkdir(parents=True, exist_ok=True)
+        # clusterPath = os.path.join(output_path, "cluster/")  # "./output/cluster/"
+        # clusterPaths.append(clusterPath)
+        # rmtree(clusterPath, ignore_errors=True)
+        # for i in range(10, 110, 10):
+        #     Path(clusterPath + str(i)).mkdir(parents=True, exist_ok=True)
         # dataframe = pd.read_excel(os.path.join(output_path, name[
         #     0] + ".xlsx"), engine = 'openpyxl')  # pd.read_excel(name[0] + ".xlsx", engine='openpyxl')
         dataframe = df.copy(deep=True)
@@ -326,8 +327,13 @@ def process_yeast(output_path,excels_path, template1, template2):
         # cv2.imwrite(os.path.join(output_path, 'first crop.png'), img)
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        levelRange=getLevelRange(gray)
+        gray=rescaleIntensity(gray,[0,levelRange[1]])
         gray = cv2.Sobel(gray, cv2.CV_8UC1, 1, 0, ksize=5)
-        gray = cv2.blur(gray, (5, 5))
+        gray = cv2.medianBlur(gray,5)
+        gray = cv2.GaussianBlur(gray,(5,5),3)
+        levelRange=getLevelRange(gray)
+        gray=rescaleIntensity(gray,[sum(levelRange)/2,levelRange[1]])
         gray = ((gray > 90) * 255).astype(np.uint8)
         # cv2.imwrite(os.path.join(output_path, 'gray.jpg'), gray)
         xProj, yProj = getHistogramProjection(gray)
