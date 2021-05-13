@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 from flask import Flask,request
@@ -40,10 +41,18 @@ def createExperiment():
         return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(err)
     return 'ok'
 
-@app.route('/<path:path>',methods=['GET'])
+@app.route('/<path:path>',methods=['GET','POST'])
 def displayExperimentData(path):
     if path.startswith("display"):
         path=path[8:]
+    elif path.startswith('delete'):
+        if request.form['password'] == "FuxmanBassLab":
+            folder=path.split('/')[1]
+            shutil.rmtree(os.path.join("uploads", folder), ignore_errors=True)
+            return flask.redirect('/')
+        else:
+            return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
+                "Incorrect Password")
     else:
         return flask.redirect('/')
     try:
@@ -52,9 +61,10 @@ def displayExperimentData(path):
             raise Exception("Invalid Path :"+path)
         if os.path.isfile(path):
             return flask.send_file(path)
+        folderName=path.split('/')[2]
         files = os.listdir(path)
         files.sort()
-        return flask.render_template('browser.html', files=files)
+        return flask.render_template('browser.html', files=files,folderName=folderName)
     except Exception as err:
         return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
             err)

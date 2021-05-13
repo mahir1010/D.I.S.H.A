@@ -3,6 +3,10 @@
     <title>Y1H Assay Analysis</title>
 </head>
 <body>
+    <form action="/delete/{{folderName}}" method="post">
+        <input id="password" name="password" type="password" placeholder="password">
+        <button id="submit" name="submit">Delete</button>
+    </form>
 <ul>
     {% for file in files %}
     <li>
