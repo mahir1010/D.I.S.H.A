@@ -1,8 +1,10 @@
 import os
 import shutil
+import zipfile
+from io import BytesIO
 from pathlib import Path
 
-from flask import Flask,request
+from flask import Flask, request, send_file
 import flask
 from Pipeline import process_yeast
 import cv2
@@ -44,29 +46,47 @@ def createExperiment():
 @app.route('/<path:path>',methods=['GET','POST'])
 def displayExperimentData(path):
     if path.startswith("display"):
-        path=path[8:]
+        try:
+            path=path[8:]
+            path = os.path.join(UPLOAD_FOLDER, path)
+            if not os.path.exists(path):
+                raise Exception("Invalid Path :" + path)
+            if os.path.isfile(path):
+                return flask.send_file(path)
+            folderName = path.split('/')[2]
+            files = os.listdir(path)
+            files.sort()
+            return flask.render_template('browser.html', files=files, folderName=folderName)
+        except Exception as err:
+            return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
+        err)
     elif path.startswith('delete'):
         if request.form['password'] == "FuxmanBassLab":
-            folder=path.split('/')[1]
+            folder=path.split('/')[-1]
             shutil.rmtree(os.path.join("uploads", folder), ignore_errors=True)
             return flask.redirect('/')
         else:
             return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
                 "Incorrect Password")
+    elif path.startswith('download'):
+        try:
+            folder = os.path.join("uploads",path.split('/')[-1])
+            memory_file = BytesIO()
+            with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(folder):
+                    for file in files:
+                        zipf.write(os.path.join(root, file))
+            memory_file.seek(0)
+            return send_file(memory_file,
+                             attachment_filename=(path.split('/')[-1])+'.zip',
+                             as_attachment=True)
+        except Exception as err:
+            return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
+                err)
+    elif path.startswith('templates'):
+        return flask.send_file(path)
     else:
         return flask.redirect('/')
-    try:
-        path =os.path.join(UPLOAD_FOLDER,path)
-        if not os.path.exists(path):
-            raise Exception("Invalid Path :"+path)
-        if os.path.isfile(path):
-            return flask.send_file(path)
-        folderName=path.split('/')[2]
-        files = os.listdir(path)
-        files.sort()
-        return flask.render_template('browser.html', files=files,folderName=folderName)
-    except Exception as err:
-        return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
-            err)
+
 if __name__ == "__main__":
     app.run(debug=True)
