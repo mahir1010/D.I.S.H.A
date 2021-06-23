@@ -1,13 +1,15 @@
 import os
 import shutil
+import sys
 import zipfile
 from io import BytesIO
 from pathlib import Path
 
 from flask import Flask, request, send_file
 import flask
-from Pipeline import process_yeast
+from Pipeline import process_yeast,saveExtractedRows
 import cv2
+import traceback
 
 app = Flask(__name__)
 UPLOAD_FOLDER="./uploads"
@@ -40,6 +42,7 @@ def createExperiment():
         else:
             raise Exception("redirecting to home")
     except Exception as err:
+        print(err, file=sys.stderr)
         return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(err)
     return 'ok'
 
@@ -70,17 +73,32 @@ def displayExperimentData(path):
                 "Incorrect Password")
     elif path.startswith('download'):
         try:
-            folder = os.path.join("uploads",path.split('/')[-1])
-            memory_file = BytesIO()
-            with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(folder):
-                    for file in files:
-                        zipf.write(os.path.join(root, file))
-            memory_file.seek(0)
-            return send_file(memory_file,
-                             attachment_filename=(path.split('/')[-1])+'.zip',
-                             as_attachment=True)
+            if path.startswith('download/extract'):
+                fileName=request.values['title']
+                rows=[]
+                for key in request.values.keys():
+                    if key!='title':
+                        rows.append(int(key))
+                if len(rows)==0:
+                    raise Exception("No Rows Selected")
+                saveExtractedRows(fileName,rows)
+                return flask.redirect('/display'+request.values['title'])
+            else:
+                if path.split('/')[-1]!='':
+                    folder = os.path.join("uploads",path.split('/')[-1])
+                    memory_file = BytesIO()
+                    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                        for root, dirs, files in os.walk(folder):
+                            for file in files:
+                                zipf.write(os.path.join(root, file))
+                    memory_file.seek(0)
+                    return send_file(memory_file,
+                                     attachment_filename=(path.split('/')[-1])+'.zip',
+                                     as_attachment=True)
+                else:
+                    raise Exception("Invalid path")
         except Exception as err:
+            print(traceback.format_exc())
             return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
                 err)
     elif path.startswith('templates'):
