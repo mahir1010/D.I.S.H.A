@@ -1,7 +1,7 @@
 import math
 import sys
 from pathlib import Path
-
+import bs4 as bs
 import cv2
 import numpy as np
 import pandas as pd
@@ -13,75 +13,151 @@ from sklearn import preprocessing
 import glob
 
 import os
+
 row2IndexMap = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7}
-excel_file = "./data/HetY1H Pilot TF coordinates.xlsx"
+
 # , index_col=None, header=None)
-df = pd.read_excel(excel_file, engine='openpyxl')
+
 css = '''
-h1{
-  font-size: 30px;
-  color: #212121;
-  text-transform: uppercase;
-  font-weight: bolder;
-  text-align: center;
-  margin-bottom: 15px;
-}
-table{
-  table-layout: fixed;
-  border-spacing:5px;
-  margin:auto;
-  font-size: 18px;
-
-}
-
-th{
-  padding: 20px 15px;
-  text-align: left;
-  font-weight: bolder;
-  font-size: 14px;
-  color: #212121;
-  text-transform: uppercase;
-  text-align-last: center;
-  box-shadow: 3px 3px 5px 6px #ccc;
-}
-td{
-  padding: 5px;
-  text-align: left;
-  vertical-align:middle;
-  font-weight: bolder;
-  color: #212121;
-  border-bottom: solid 1px rgba(0,0,0,0.1);
-  box-shadow: 3px 3px 5px 6px #adabab;
-  min-width: 170px;
-  text-align: center;
-}
-
-
-/* demo styles */
 body{
-  font-family: 'Roboto', sans-serif;
-  font-weight:bolder;
-}
-section{
-  margin: 50px;
-}
+      --textC: 245,245,245;
+      --backgroundC:35,35,35;
+      background: rgb(var(--backgroundC));
+      color:rgb(var(--textC));
+    }
+    .fixed-nav-bar {
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      direction: ltr;
+      height: 3%;
+    }
 
-/* for custom scrollbar for webkit browser*/
+    h1 {
+      font-size: 30px;
+      text-transform: uppercase;
+      font-weight: bolder;
+      text-align: center;
+      margin-bottom: 15px;
+    }
 
-::-webkit-scrollbar {
-    width: 6px;
-} 
-::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
-} 
-::-webkit-scrollbar-thumb {
-    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
-}'''
-html = '''<html><head><title>{0}</title><style>{1}</style></head><body><div>{2}<div><body></html'''
+    button {
+      border: none;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      transition: 0.3s;
+      border-radius: 5px;
+      background-color: #03a9f4;
+      transition: 1s;
+    }
+
+    table {
+      table-layout: fixed;
+      border-spacing: 5px;
+      margin: auto;
+      font-size: 18px;
+      direction: ltr;
+    }
+
+    .fixTableHead {
+      overflow-y: auto;
+      height: 97%;
+      direction: ltr;
+    }
+
+    .fixTableHead thead th {
+      background:rgba(var(--backgroundC),0.98);
+      position: sticky;
+      top: 0;
+    }
+
+    input[type="checkbox"]:hover {
+      box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    th {
+      padding: 20px 15px;
+      text-align: left;
+      font-weight: bolder;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-align-last: center;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      border: none;
+    }
+
+    td:hover {
+      box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    td {
+      padding: 1px;
+      text-align: left;
+      vertical-align: middle;
+      font-weight: bolder;
+
+      border: none;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      min-width: 170px;
+      text-align: center;
+    }
+
+
+    /* demo styles */
+    body {
+      font-family: 'Roboto', sans-serif;
+      font-weight: bolder;
+    }
+
+    section {
+      margin: 50px;
+    }'''
+javascript = '''
+<script type="text/javascript">
+updateStatus=function(checkbox) {
+  if (checkbox.getAttribute("checked")==null){
+  checkbox.setAttribute("checked","true");
+  }else{
+    checkbox.removeAttribute("checked");
+  }
+}
+function post() {
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = '/download/extract/';
+  inp=document.createElement('input');
+  inp.type='text';
+  inp.value=window.location.href.split('display')[1];
+  inp.name='title';
+  form.appendChild(inp)
+  data=document.getElementsByClassName("dataframe")[0];
+  rows=data.getElementsByTagName("tr");
+  for (var i=0; i<rows.length; i++){
+  data = rows[i].getElementsByTagName("td");
+  for (var j=0;j<data.length;j++) {
+    if (data[j].firstChild.type=="checkbox") {
+      data[j].firstChild.name=""+i
+      form.appendChild(data[j].firstChild);
+    }
+  }
+  }
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+'''
+downloadHTML = '<div><nav class="fixed-nav-bar"><button onclick="post()">Save</button></nav></div>'
+html = '''<html><head><title>{0}</title><style>{1}</style>{3}</head><body>{4}<div class="fixTableHead">{2}</div><body></html>'''
 
 ### GLOBAL VAR ######
 activityThreshold = 0.01
+
+
 ### GLOBAL VAR ######
+def checkBoxGenerator(input):
+    if input:
+        return '<input type="checkbox" checked onchange="updateStatus(this)></input>'
+    else:
+        return '<input type="checkbox" onchange="updateStatus(this)"></input>'
+
+
 def main_add_cols(df_input):
     df_input_no_emp = df_input.loc[(df_input['TF1'] != "empty") & (df_input['TF2'] != "empty")]
 
@@ -100,23 +176,23 @@ def main_add_cols(df_input):
         axis=1
     )
 
-    df_input_no_emp["ref_tf1_emp_coord"] = [elem for elem in list(df_tf1_empty["Coordinate"])]
-    df_input_no_emp["ref_tf1_emp_tf1_val"] = [elem for elem in list(df_tf1_empty["TF1"])]
-    df_input_no_emp["ref_tf1_emp_tf2_val"] = [elem for elem in list(df_tf1_empty["TF2"])]
-    df_input_no_emp["ref_tf1_emp_Intensity"] = [elem for elem in list(df_tf1_empty["Intensity"])]
-    df_input_no_emp["ref_tf1_emp_Image"] = [str(elem) for elem in list(df_tf1_empty["Image"])]
+    df_input_no_emp["TF1-EMP"] = [elem for elem in list(df_tf1_empty["Coordinate"])]
+    df_input_no_emp["TF1-EMP_TF1"] = [elem for elem in list(df_tf1_empty["TF1"])]
+    df_input_no_emp["TF1-EMP_TF2"] = [elem for elem in list(df_tf1_empty["TF2"])]
+    df_input_no_emp["TF1-EMP_Intensity"] = [elem for elem in list(df_tf1_empty["Intensity"])]
+    df_input_no_emp["TF1_EMP_Image"] = [str(elem) for elem in list(df_tf1_empty["Image"])]
     #####################
-    df_input_no_emp["ref_tf2_emp_coord"] = [elem for elem in list(df_tf2_empty["Coordinate"])]
-    df_input_no_emp["ref_tf2_emp_tf1_val"] = [elem for elem in list(df_tf2_empty["TF1"])]
-    df_input_no_emp["ref_tf2_emp_tf2_val"] = [elem for elem in list(df_tf2_empty["TF2"])]
-    df_input_no_emp["ref_tf2_emp_Intensity"] = [elem for elem in list(df_tf2_empty["Intensity"])]
-    df_input_no_emp["ref_tf2_emp_Image"] = [str(elem) for elem in list(df_tf2_empty["Image"])]
+    df_input_no_emp["TF2-EMP"] = [elem for elem in list(df_tf2_empty["Coordinate"])]
+    df_input_no_emp["TF2-EMP_TF1"] = [elem for elem in list(df_tf2_empty["TF1"])]
+    df_input_no_emp["TF2-EMP_TF2"] = [elem for elem in list(df_tf2_empty["TF2"])]
+    df_input_no_emp["TF2-EMP_Intensity"] = [elem for elem in list(df_tf2_empty["Intensity"])]
+    df_input_no_emp["TF2_EMP_Image"] = [str(elem) for elem in list(df_tf2_empty["Image"])]
     #####################
-    df_input_no_emp["ref_emp_emp_coord"] = [elem for elem in list(df_empty_empty["Coordinate"])]
-    df_input_no_emp["ref_emp_emp_tf1_val"] = [elem for elem in list(df_empty_empty["TF1"])]
-    df_input_no_emp["ref_emp_emp_tf2_val"] = [elem for elem in list(df_empty_empty["TF2"])]
-    df_input_no_emp["ref_emp_emp_Intensity"] = [elem for elem in list(df_empty_empty["Intensity"])]
-    df_input_no_emp["ref_emp_emp_Image"] = [str(elem) for elem in list(df_empty_empty["Image"])]
+    df_input_no_emp["EMP_EMP"] = [elem for elem in list(df_empty_empty["Coordinate"])]
+    df_input_no_emp["EMP_EMP_TF1"] = [elem for elem in list(df_empty_empty["TF1"])]
+    df_input_no_emp["EMP_EMP_TF2"] = [elem for elem in list(df_empty_empty["TF2"])]
+    df_input_no_emp["EMP_EMP_Intensity"] = [elem for elem in list(df_empty_empty["Intensity"])]
+    df_input_no_emp["EMP_EMP_Image"] = [str(elem) for elem in list(df_empty_empty["Image"])]
 
     return df_input_no_emp
 
@@ -201,6 +277,7 @@ def getIndex(inp, rows, cols):
                              [cols[yIndex + j] - cols[yIndex], cols[yIndex + j + 1] - cols[yIndex]]])
     return [[rows[xIndex], rows[xIndex + 2]], [cols[yIndex], cols[yIndex + 2]]], colonies
 
+
 def rescaleIntensity(img, range):
     table = np.interp(np.arange(256), range, [0, 255]).astype('uint8')
     return cv2.LUT(img, table)
@@ -222,6 +299,7 @@ def genPercentage(val):
 
 def getTruth(val):
     global activityThreshold
+    val = float(val)
     if val < activityThreshold:
         return '<b style="color:red;">' + str(round(val, 3)) + '</b>'
     else:
@@ -282,23 +360,23 @@ def createProjectionImages(gray, xProj, yProj, path='./'):
     # cv2.imwrite(path + 'vert.jpg', blankImage)
 
 
-def process_yeast(output_path,excels_path, template1, template2):
+def process_yeast(output_path, excels_path, template1, template2):
     global activityThreshold
     # if len(sys.argv) == 1:
     #     print("Usage test.py <path_to_images>")
     #     exit(-1)
-    path = glob.glob(os.path.join(output_path,"*.JPG"))  # glob.glob(sys.argv[1] + "/*.JPG")
+    path = glob.glob(os.path.join(output_path, "*.JPG"))  # glob.glob(sys.argv[1] + "/*.JPG")
     df = pd.read_excel(excels_path, engine='openpyxl')
     dataframes = []
-    outputPaths=[]
-    fileNames=[]
+    outputPaths = []
+    fileNames = []
     # clusterPaths=[]
     for imagePath in path:
         name = Path(imagePath).stem
         name = name.split('.')
         fileNames.append(name)
         outputPath = os.path.join(output_path, name[0])  # "./output/{}".format(name[0])
-        Path(outputPath).mkdir(parents=True,exist_ok=True)
+        Path(outputPath).mkdir(parents=True, exist_ok=True)
         outputPaths.append(outputPath)
         # clusterPath = os.path.join(output_path, "cluster/")  # "./output/cluster/"
         # clusterPaths.append(clusterPath)
@@ -311,7 +389,7 @@ def process_yeast(output_path,excels_path, template1, template2):
         # print(list(dataframe.columns))
         image = cv2.imread(imagePath)
         if image is None:
-            return -1,"Can't access image at "+output_path
+            return -1, "Can't access image at " + output_path
         img = cv2.Canny(image, 20, 30)
         # cv2.imwrite(os.path.join(output_path, 'edge-detect.jpg'), img)#'edge-detect.jpg', img)
         # template1 = cv2.imread(os.path.join(output_path,'upperLeft.png'), 0)
@@ -327,13 +405,13 @@ def process_yeast(output_path,excels_path, template1, template2):
         # cv2.imwrite(os.path.join(output_path, 'first crop.png'), img)
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        levelRange=getLevelRange(gray)
-        gray=rescaleIntensity(gray,[0,levelRange[1]])
+        levelRange = getLevelRange(gray)
+        gray = rescaleIntensity(gray, [0, levelRange[1]])
         gray = cv2.Sobel(gray, cv2.CV_8UC1, 1, 0, ksize=5)
-        gray = cv2.medianBlur(gray,5)
-        gray = cv2.GaussianBlur(gray,(5,5),3)
-        levelRange=getLevelRange(gray)
-        gray=rescaleIntensity(gray,[sum(levelRange)/2,levelRange[1]])
+        gray = cv2.medianBlur(gray, 5)
+        gray = cv2.GaussianBlur(gray, (5, 5), 3)
+        levelRange = getLevelRange(gray)
+        gray = rescaleIntensity(gray, [sum(levelRange) / 2, levelRange[1]])
         gray = ((gray > 90) * 255).astype(np.uint8)
         # cv2.imwrite(os.path.join(output_path, 'gray.jpg'), gray)
         xProj, yProj = getHistogramProjection(gray)
@@ -419,9 +497,9 @@ def process_yeast(output_path,excels_path, template1, template2):
                 outputIntensity.append(np.sum(intensity) * area)
                 cv2.imwrite(os.path.join(outputPath, c + ".png"),  # outputPath + "/" + c + ".png",
                             crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
-                cv2.imwrite(os.path.join(outputPath, c)+ "_final.png", roi)
-                cv2.imwrite(os.path.join(outputPath, c)+ "_preMask.png", inv)
-                cv2.imwrite(os.path.join(outputPath, c)+ "_mask.png", hsvImage)
+                cv2.imwrite(os.path.join(outputPath, c) + "_final.png", roi)
+                cv2.imwrite(os.path.join(outputPath, c) + "_preMask.png", inv)
+                cv2.imwrite(os.path.join(outputPath, c) + "_mask.png", hsvImage)
                 outputImage.append(os.path.join(name[0], c + ".png"))
             else:
                 outputIntensity.append(math.nan)
@@ -447,37 +525,82 @@ def process_yeast(output_path,excels_path, template1, template2):
                          (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
         cv2.imwrite(os.path.join(outputPath, 'crop_{}.png'.format(name[0])), crop)
         dataframes.append(dataframe)
-    intensities=[]
-    plateMedian=[]
+    intensities = []
+    plateMedian = []
     for dataframe in dataframes:
         intensities.extend(list(dataframe['Intensity']))
         plateMedian.append(np.median(dataframe['Intensity']))
 
-    median=np.median(plateMedian)
-    for dataframe in  dataframes:
-        normalized = np.array(list(dataframe['Intensity']))/median
+    median = np.median(plateMedian)
+    for dataframe in dataframes:
+        normalized = np.array(list(dataframe['Intensity'])) / median
         normalized = stats.zscore(normalized)
         # detected = genOutputIntensity > activityThreshold
-        dataframe['Intensity']=normalized
+        dataframe['Intensity'] = normalized
 
-    for dataframe,name in zip(dataframes,fileNames):
-        excelColumns=list(dataframe.columns)
+    for dataframe, name in zip(dataframes, fileNames):
+        excelColumns = list(dataframe.columns)
         excelColumns.remove('Image')
-        dataframe[excelColumns].to_excel(os.path.join(output_path,name[0]) + ".xlsx", index=False)
-
+        dataframe[excelColumns].to_excel(os.path.join(output_path, name[0]) + ".xlsx", index=False)
 
         ################################################################
         dataframe = main_add_cols(dataframe)  # COSMIN
         ################################################################
-        activityThreshold=dataframe['ref_emp_emp_Intensity'][0]
+        activityThreshold = dataframe['EMP_EMP_Intensity'][0]
+        dataframe.insert(0, 'Activated', [False for i in range(len(dataframe.index))])
         opHtml = html.format(name[0], css,
-                             dataframe.to_html(escape=False, formatters=dict(Image=imageTageGenerator,
-                                                                             Intensity=getTruth,
-                                                                             ref_tf1_emp_Image=imageTageGenerator,
-                                                                             ref_tf2_emp_Image=imageTageGenerator,
-                                                                             ref_emp_emp_Image=imageTageGenerator)))
+                             dataframe.to_html(escape=False,
+                                               formatters=dict(Activated=checkBoxGenerator, Image=imageTageGenerator,
+                                                               Intensity=getTruth,
+                                                               TF1_EMP_Image=imageTageGenerator,
+                                                               TF2_EMP_Image=imageTageGenerator,
+                                                               EMP_EMP_Image=imageTageGenerator)), javascript,
+                             downloadHTML)
         file = open(os.path.join(output_path, '{}.html'.format(name[0])), "w")
         file.write(opHtml)
         file.close()
 
-    return 0,'ok'
+    return 0, 'ok'
+
+
+def saveExtractedRows(path, extractedRows):
+    extractedRows.sort()
+    name = path.split("/")[-1].split('.html')[0]
+    path = path[:-1] if path[-1] == '?' else path
+    path = path[1:] if path[0] == '/' else path
+    path = os.path.join("uploads", path)
+    htmlFile = open(path, 'r').read()
+    htmlFile = bs.BeautifulSoup(htmlFile, 'html5lib')
+    table = htmlFile.find_all('table')[0]
+    columns = [header.text for header in table.find('thead').find_all('th')]
+    rows = table.find_all('tr')
+    data = []
+    for row in rows:
+        drow = []
+        for cell in row:
+            if type(cell) != bs.element.Tag:
+                continue
+            if cell.find('img'):
+                drow.append(cell.find('img')['src'])
+            elif cell.find('input'):
+                drow.append(cell.find('input').has_attr("checked"))
+            else:
+                drow.append(cell.text)
+        drow = [d.text if not d.find('img') else d.find('img')['src'] for d in row.find_all('td')]
+        if len(drow) != 0:
+            data.append(drow)
+    testHTML = pd.DataFrame(data, columns=columns[1:])
+    columns = list(testHTML.columns)
+    columns.remove('Activated')
+    testHTML = testHTML[columns].iloc[extractedRows]
+    opHtml = html.format(name, css,
+                         testHTML.to_html(escape=False,
+                                          formatters=dict(Image=imageTageGenerator,
+                                                          Intensity=getTruth,
+                                                          TF1_EMP_Image=imageTageGenerator,
+                                                          TF2_EMP_Image=imageTageGenerator,
+                                                          EMP_EMP_Image=imageTageGenerator)), "", "")
+    file = open(path[:-5] + '_Activated.html', "w")
+    file.write(opHtml)
+    file.close()
+    return 0, 'ok'
