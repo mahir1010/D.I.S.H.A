@@ -50,8 +50,8 @@ body{
 
     table {
       table-layout: fixed;
-      border-spacing: 5px;
-      margin: auto;
+      border: None;
+      width:100%;
       font-size: 18px;
       direction: ltr;
     }
@@ -158,100 +158,6 @@ def checkBoxGenerator(input):
         return '<input type="checkbox" onchange="updateStatus(this)"></input>'
 
 
-def main_add_cols(df_input):
-    df_input_no_emp = df_input.loc[(df_input['TF1'] != "empty") & (df_input['TF2'] != "empty")]
-
-    df_tf1_empty = df_input_no_emp.apply(
-        lambda row: get_tf1_empty(row, df_input),
-        axis=1
-    )
-
-    df_tf2_empty = df_input_no_emp.apply(
-        lambda row: get_tf2_empty(row, df_input),
-        axis=1
-    )
-
-    df_empty_empty = df_input_no_emp.apply(
-        lambda row: get_empty_empty(row, df_input),
-        axis=1
-    )
-
-    df_input_no_emp["TF1-EMP"] = [elem for elem in list(df_tf1_empty["Coordinate"])]
-    df_input_no_emp["TF1-EMP_TF1"] = [elem for elem in list(df_tf1_empty["TF1"])]
-    df_input_no_emp["TF1-EMP_TF2"] = [elem for elem in list(df_tf1_empty["TF2"])]
-    df_input_no_emp["TF1-EMP_Intensity"] = [elem for elem in list(df_tf1_empty["Intensity"])]
-    df_input_no_emp["TF1_EMP_Image"] = [str(elem) for elem in list(df_tf1_empty["Image"])]
-    #####################
-    df_input_no_emp["TF2-EMP"] = [elem for elem in list(df_tf2_empty["Coordinate"])]
-    df_input_no_emp["TF2-EMP_TF1"] = [elem for elem in list(df_tf2_empty["TF1"])]
-    df_input_no_emp["TF2-EMP_TF2"] = [elem for elem in list(df_tf2_empty["TF2"])]
-    df_input_no_emp["TF2-EMP_Intensity"] = [elem for elem in list(df_tf2_empty["Intensity"])]
-    df_input_no_emp["TF2_EMP_Image"] = [str(elem) for elem in list(df_tf2_empty["Image"])]
-    #####################
-    df_input_no_emp["EMP_EMP"] = [elem for elem in list(df_empty_empty["Coordinate"])]
-    df_input_no_emp["EMP_EMP_TF1"] = [elem for elem in list(df_empty_empty["TF1"])]
-    df_input_no_emp["EMP_EMP_TF2"] = [elem for elem in list(df_empty_empty["TF2"])]
-    df_input_no_emp["EMP_EMP_Intensity"] = [elem for elem in list(df_empty_empty["Intensity"])]
-    df_input_no_emp["EMP_EMP_Image"] = [str(elem) for elem in list(df_empty_empty["Image"])]
-
-    return df_input_no_emp
-
-
-def filter_corner_plates(input_coord):
-    input_coord = input_coord.split('-')
-    number = input_coord[0]
-    letter = input_coord[1]
-    if int(number) != 1 and int(number) != 12 and str(letter) != 'A' and str(letter) != 'H':
-        return True
-    else:
-        return False
-
-
-def get_tf1_empty(row_df, df_input):  # and score and im # 1 12 A H
-    # print("corner plates : {}".format(corner_plates))
-    first_match_tf1_empty = (df_input.loc[(df_input['TF1'] == "empty")
-                                          & (df_input['TF2'] == str(row_df["TF2"]))])
-
-    corner_plates = first_match_tf1_empty["Coordinate"].apply(
-        filter_corner_plates)
-
-    if first_match_tf1_empty.empty:
-        return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
-    else:
-        first_match_tf1_empty = first_match_tf1_empty.reset_index(drop=True)
-        return first_match_tf1_empty.iloc[0]
-
-
-def get_tf2_empty(row_df, df_input):  # and score and im
-    first_match_tf2_empty = (df_input.loc[(df_input['TF2'] == "empty")
-                                          & (df_input['TF1'] == str(row_df["TF1"]))])
-
-    corner_plates = first_match_tf2_empty["Coordinate"].apply(
-        filter_corner_plates)
-    # first_match_tf2_empty = first_match_tf2_empty[list(corner_plates)]
-
-    if first_match_tf2_empty.empty:
-        return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
-    else:
-        first_match_tf2_empty = first_match_tf2_empty.reset_index(drop=True)
-        return first_match_tf2_empty.iloc[0]
-
-
-def get_empty_empty(row_df, df_input):  # and score and im
-    first_match_empty_empty = (df_input.loc[(df_input['TF2'] == "empty")
-                                            & (df_input['TF1'] == "empty")])
-
-    corner_plates = first_match_empty_empty["Coordinate"].apply(
-        filter_corner_plates)
-    first_match_empty_empty = first_match_empty_empty[list(corner_plates)]
-
-    if first_match_empty_empty.empty:
-        return pd.Series(dtype=row_df.dtype).reindex_like(row_df)
-    else:
-        first_match_empty_empty = first_match_empty_empty.reset_index(
-            drop=True)
-        return first_match_empty_empty.iloc[0]
-
 
 def getIndex(inp, rows, cols):
     index = inp.split("-")
@@ -330,9 +236,10 @@ def getPeaks(proj, thresh1, thresh2):
     return peaks, gradient
 
 
-def getLevelRange(img, percentile=0.01):
+def getLevelRange(img, percentile=0.01,skipZero=False):
     # Assuming grayscale
     histogram = np.histogram(img.flatten(), range(257))
+    histogram[0][0]=0 if skipZero else histogram[0][0]
     cumulativeSum = np.cumsum(histogram[0])
     lower = upper = 255
     for i, j in enumerate(cumulativeSum):
@@ -359,204 +266,245 @@ def createProjectionImages(gray, xProj, yProj, path='./'):
                  (column, int(xProj[column])), (255, 255, 255), 1)
     # cv2.imwrite(path + 'vert.jpg', blankImage)
 
+def addRows(dataframe):
+    empty=dataframe.loc[(dataframe['TF2'] == "empty")&(dataframe['TF1'] == "empty")].iloc[0]
+    targetDf=dataframe.loc[(dataframe['TF2'] != "empty")&(dataframe['TF1'] != "empty")].copy(deep=True)
+    for index,row in dataframe.iterrows():
+        targetDf.loc[index+0.2]=dataframe.loc[(dataframe['TF2'] == "empty")&(dataframe['TF1'] == row['TF1'])].iloc[0]
+        targetDf.loc[index + 0.4] = dataframe.loc[(dataframe['TF1'] == "empty") & (dataframe['TF2'] == row['TF2'])].iloc[0]
+        targetDf.loc[index + 0.6] = empty
+    targetDf.sort_index(inplace=True)
+    targetDf.reset_index(drop=True,inplace=True)
+    return targetDf
 
-def process_yeast(output_path, excels_path, template1, template2):
+header='<th>Intensity</th><th>Area</th><th>Image</th>'
+
+def process_yeast(output_path, excels_path, template1, template2,debug=False):
     global activityThreshold
     # if len(sys.argv) == 1:
     #     print("Usage test.py <path_to_images>")
     #     exit(-1)
     path = glob.glob(os.path.join(output_path, "*.JPG"))  # glob.glob(sys.argv[1] + "/*.JPG")
+    path.sort()
     df = pd.read_excel(excels_path, engine='openpyxl')
-    dataframes = []
-    outputPaths = []
-    fileNames = []
     # clusterPaths=[]
-    for imagePath in path:
-        name = Path(imagePath).stem
-        name = name.split('.')
-        fileNames.append(name)
-        outputPath = os.path.join(output_path, name[0])  # "./output/{}".format(name[0])
-        Path(outputPath).mkdir(parents=True, exist_ok=True)
-        outputPaths.append(outputPath)
-        # clusterPath = os.path.join(output_path, "cluster/")  # "./output/cluster/"
-        # clusterPaths.append(clusterPath)
-        # rmtree(clusterPath, ignore_errors=True)
-        # for i in range(10, 110, 10):
-        #     Path(clusterPath + str(i)).mkdir(parents=True, exist_ok=True)
-        # dataframe = pd.read_excel(os.path.join(output_path, name[
-        #     0] + ".xlsx"), engine = 'openpyxl')  # pd.read_excel(name[0] + ".xlsx", engine='openpyxl')
-        dataframe = df.copy(deep=True)
-        # print(list(dataframe.columns))
-        image = cv2.imread(imagePath)
-        if image is None:
-            return -1, "Can't access image at " + output_path
-        img = cv2.Canny(image, 20, 30)
-        # cv2.imwrite(os.path.join(output_path, 'edge-detect.jpg'), img)#'edge-detect.jpg', img)
-        # template1 = cv2.imread(os.path.join(output_path,'upperLeft.png'), 0)
-        # template2 = cv2.imread(os.path.join(output_path,'bottomRight.png'), 0)
+    baits={}
+    for file in path:
+        name=Path(file).stem.split('.')[0]
+        properties=name.split('_')
+        baitNo=properties[1].split('-')[-1]
+        if baitNo not in baits:
+            baits[baitNo]=[]
+        baits[baitNo].append(file)
 
-        res = cv2.matchTemplate(img, template1, cv2.TM_CCORR_NORMED)
-        res1 = cv2.matchTemplate(img, template2, cv2.TM_CCORR_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-        top_left = np.add(max_loc, [140, 40])
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res1)
-        bottom_right = np.add(max_loc, [0, 140])
-        img = image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-        # cv2.imwrite(os.path.join(output_path, 'first crop.png'), img)
+    for bait in baits.keys():
+        headers='<thead><tr>'+'<th colspan="3">Bait Number {}</th>'.format(bait)+'<th colspan="2">TF</th>'+''.join(['<th colspan="3">Day {}</th>'.format(name.split('_')[-1][0]) for name in baits[bait]])+'</tr>'+'<tr><th>Index</th><th>Activated</th><th>Coordinate</th><th>TF1</th><th>TF2</th>' + (header * len(baits[bait])) + '</tr></thead>'
+        dataframes = []
+        outputPaths = []
+        fileNames = []
+        for imagePath in baits[bait]:
+            name = Path(imagePath).stem
+            name = name.split('.')
+            fileNames.append(name)
+            outputPath = os.path.join(output_path, name[0])  # "./output/{}".format(name[0])
+            Path(outputPath).mkdir(parents=True, exist_ok=True)
+            outputPaths.append(outputPath)
+            # clusterPath = os.path.join(output_path, "cluster/")  # "./output/cluster/"
+            # clusterPaths.append(clusterPath)
+            # rmtree(clusterPath, ignore_errors=True)
+            # for i in range(10, 110, 10):
+            #     Path(clusterPath + str(i)).mkdir(parents=True, exist_ok=True)
+            # dataframe = pd.read_excel(os.path.join(output_path, name[
+            #     0] + ".xlsx"), engine = 'openpyxl')  # pd.read_excel(name[0] + ".xlsx", engine='openpyxl')
+            dataframe = df.copy(deep=True)
+            # print(list(dataframe.columns))
+            image = cv2.imread(imagePath)
+            if image is None:
+                return -1, "Can't access image at " + output_path
+            img = cv2.Canny(image, 20, 30)
+            # cv2.imwrite(os.path.join(output_path, 'edge-detect.jpg'), img)#'edge-detect.jpg', img)
+            # template1 = cv2.imread(os.path.join(output_path,'upperLeft.png'), 0)
+            # template2 = cv2.imread(os.path.join(output_path,'bottomRight.png'), 0)
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        levelRange = getLevelRange(gray)
-        gray = rescaleIntensity(gray, [0, levelRange[1]])
-        gray = cv2.Sobel(gray, cv2.CV_8UC1, 1, 0, ksize=5)
-        gray = cv2.medianBlur(gray, 5)
-        gray = cv2.GaussianBlur(gray, (5, 5), 3)
-        levelRange = getLevelRange(gray)
-        gray = rescaleIntensity(gray, [sum(levelRange) / 2, levelRange[1]])
-        gray = ((gray > 90) * 255).astype(np.uint8)
-        # cv2.imwrite(os.path.join(output_path, 'gray.jpg'), gray)
-        xProj, yProj = getHistogramProjection(gray)
-        smooth = 5
-        xProj = np.convolve(
-            xProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
-        yProj = np.convolve(
-            yProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
-        xProj = (xProj > 20) * xProj
-        yProj = (yProj > 20) * yProj
+            res = cv2.matchTemplate(img, template1, cv2.TM_CCORR_NORMED)
+            res1 = cv2.matchTemplate(img, template2, cv2.TM_CCORR_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+            top_left = np.add(max_loc, [140, 40])
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res1)
+            bottom_right = np.add(max_loc, [0, 140])
+            img = image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+            # cv2.imwrite(os.path.join(output_path, 'first crop.png'), img)
 
-        xNonZero = [i for i, elem in enumerate(xProj) if elem > 30]
-        yNonZero = [i for i, elem in enumerate(yProj) if elem > 30]
-        crop = img
-        xpeaks, xGrad = getPeaks(xProj, 0, 0)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            levelRange = getLevelRange(gray)
+            gray = rescaleIntensity(gray, [0, levelRange[1]])
+            gray = cv2.Sobel(gray, cv2.CV_8UC1, 1, 0, ksize=5)
+            gray = cv2.medianBlur(gray, 5)
+            gray = cv2.GaussianBlur(gray, (5, 5), 3)
+            levelRange = getLevelRange(gray)
+            gray = rescaleIntensity(gray, [sum(levelRange) / 2, levelRange[1]])
+            gray = ((gray > 90) * 255).astype(np.uint8)
+            # cv2.imwrite(os.path.join(output_path, 'gray.jpg'), gray)
+            xProj, yProj = getHistogramProjection(gray)
+            smooth = 5
+            xProj = np.convolve(
+                xProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
+            yProj = np.convolve(
+                yProj, [1 / smooth for i in range(smooth)])[:-(smooth - 1)]
+            xProj = (xProj > 20) * xProj
+            yProj = (yProj > 20) * yProj
 
-        ypeaks, yGrad = getPeaks(yProj, 0, 0)
-        outputPercent = []
-        outputIntensity = []
-        hsvCrop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-        outputImage = []
-        Path(outputPath).mkdir(parents=True, exist_ok=True)
-        # reference, refCols = getIndex("3-B7", xpeaks, ypeaks)
+            xNonZero = [i for i, elem in enumerate(xProj) if elem > 30]
+            yNonZero = [i for i, elem in enumerate(yProj) if elem > 30]
+            crop = img
+            xpeaks, xGrad = getPeaks(xProj, 0, 0)
 
-        for c in df["Coordinate"]:
-            if (len(c.split("-")[1]) > 1):
-                index, colonies = getIndex(c, xpeaks, ypeaks)
-                roi = (hsvCrop[index[1][0]:index[1][1],
-                       index[0][0]:index[0][1]])[:, :, 2]
-                hsvImage = np.zeros_like(roi, dtype=np.uint8)
-                for ix, colony in enumerate(colonies):
-                    subRoi = roi[colony[1][0]:colony[1]
-                    [1], colony[0][0]:colony[0][1]]
-                    levelRange = getLevelRange(subRoi)
-                    if True:
-                        colonyProcessed = rescaleIntensity(
-                            subRoi, [0, levelRange[1]])
+            ypeaks, yGrad = getPeaks(yProj, 0, 0)
+            outputPercent = []
+            outputIntensity = []
+            outputArea=[]
+            hsvCrop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+            outputImage = []
+            Path(outputPath).mkdir(parents=True, exist_ok=True)
+            # reference, refCols = getIndex("3-B7", xpeaks, ypeaks)
 
-                        colonyProcessed = cv2.GaussianBlur(
-                            colonyProcessed, (3, 3), 1.5)
-                        test = getLevelRange(colonyProcessed, 0.05)
-                        if test[1] - test[0] >= 127:
-                            test[0] = 127
-                        colonyProcessed = cv2.threshold(
-                            colonyProcessed, test[0], test[1], cv2.THRESH_BINARY_INV)[1]
-                        contours, hierarchy = cv2.findContours(
-                            colonyProcessed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                        center = np.divide(colonyProcessed.shape, 2)
-                        centerContour = None
-                        minDistance = colonyProcessed.size
-                        for contour in contours:
-                            moments = cv2.moments(contour)
-                            if moments["m00"] != 0:
-                                centroid = [
-                                    int(moments["m10"] / moments["m00"]), int(moments["m01"] / moments["m00"])]
-                                distance = math.sqrt(
-                                    np.sum(np.square(centroid - center)))
-                                if distance < minDistance:
-                                    centerContour = contour
-                                    minDistance = distance
-                        colonyProcessed = np.zeros_like(
-                            colonyProcessed, dtype=np.uint8)
+            for c in df["Coordinate"]:
+                if (len(c.split("-")[1]) > 1):
+                    index, colonies = getIndex(c, xpeaks, ypeaks)
+                    roi = (hsvCrop[index[1][0]:index[1][1],
+                           index[0][0]:index[0][1]])[:, :, 2]
+                    hsvImage = np.zeros_like(roi, dtype=np.uint8)
+                    for ix, colony in enumerate(colonies):
+                        subRoi = roi[colony[1][0]:colony[1]
+                        [1], colony[0][0]:colony[0][1]]
+                        levelRange = getLevelRange(subRoi)
+                        if True:
+                            colonyProcessed = rescaleIntensity(
+                                subRoi, [0, levelRange[1]])
+                            colonyProcessed = cv2.GaussianBlur(
+                                colonyProcessed, (3, 3), 2.5)
+                            colonyProcessed = cv2.medianBlur(colonyProcessed,ksize=9)
+                            test = getLevelRange(colonyProcessed, 0.05)
+                            # if test[1] - test[0] <= 127:
+                            #     test[0] = 127
+                            colonyProcessed = cv2.threshold(
+                                colonyProcessed, test[0], 255, cv2.THRESH_BINARY_INV)[1]
+                            contours, hierarchy = cv2.findContours(
+                                colonyProcessed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                            center = np.divide(colonyProcessed.shape, 2)
+                            centerContour = None
+                            minDistance = colonyProcessed.size
+                            for contour in contours:
+                                moments = cv2.moments(contour)
+                                if moments["m00"] != 0:
+                                    centroid = [
+                                        int(moments["m10"] / moments["m00"]), int(moments["m01"] / moments["m00"])]
+                                    distance = math.sqrt(
+                                        np.sum(np.square(centroid - center)))
+                                    if distance < minDistance:
+                                        centerContour = contour
+                                        minDistance = distance
+                            colonyProcessed = np.zeros_like(
+                                colonyProcessed, dtype=np.uint8)
 
-                        colonyProcessed = cv2.drawContours(
-                            colonyProcessed, [centerContour], 0, (255, 255, 255), cv2.FILLED)
-                        hsvImage[colony[1][0]:colony[1][1], colony[0]
-                                                            [0]:colony[0][1]] = colonyProcessed
+                            colonyProcessed = cv2.drawContours(
+                                colonyProcessed, [centerContour], 0, (255, 255, 255), cv2.FILLED)
+                            hsvImage[colony[1][0]:colony[1][1], colony[0]
+                                                                [0]:colony[0][1]] = colonyProcessed
 
-                inv = (hsvCrop[index[1][0]:index[1][1],
-                       index[0][0]:index[0][1]])[:, :, 0]
-                inv = rescaleIntensity(inv, [getLevelRange(inv)[0], 255])
-                invRange = getLevelRange(inv, 0)
-                if c == "1-B9" or c == "1-B8":
-                    pass
-                if invRange[1] - invRange[0] < 3:
-                    inv = np.zeros_like(inv, dtype=np.uint8)
-                roi = cv2.bitwise_and(inv, inv, mask=hsvImage)
-                areaImage = roi.copy()
-                areaImage[areaImage > 0] = 1
-                area = np.sum(areaImage)
-                intensity = roi.copy()
-                intensity = np.divide(intensity, np.subtract(256, intensity))
-                outputIntensity.append(np.sum(intensity) * area)
-                cv2.imwrite(os.path.join(outputPath, c + ".png"),  # outputPath + "/" + c + ".png",
-                            crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
-                cv2.imwrite(os.path.join(outputPath, c) + "_final.png", roi)
-                cv2.imwrite(os.path.join(outputPath, c) + "_preMask.png", inv)
-                cv2.imwrite(os.path.join(outputPath, c) + "_mask.png", hsvImage)
-                outputImage.append(os.path.join(name[0], c + ".png"))
-            else:
-                outputIntensity.append(math.nan)
-                outputPercent.append(0)
-                outputImage.append(None)
-        outputIntensity = np.nan_to_num(
-            outputIntensity, nan=np.nanmin(outputIntensity))
-        dataframe["Intensity"] = outputIntensity
-        dataframe["Image"] = outputImage
-        for i, p in enumerate(xpeaks):
-            if i % 4 == 0:
-                cv2.line(crop, (p, 0),
-                         (p, crop.shape[1] - 1), (0, 0, 255), thickness=3)
-            else:
-                cv2.line(crop, (p, 0),
-                         (p, crop.shape[1] - 1), (0, 0, 0), thickness=1)
-        for i, p in enumerate(ypeaks):
-            if i % 4 == 0:
-                cv2.line(crop, (0, p),
-                         (crop.shape[1] - 1, p), (0, 0, 255), thickness=3)
-            else:
-                cv2.line(crop, (0, p),
-                         (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
-        cv2.imwrite(os.path.join(outputPath, 'crop_{}.png'.format(name[0])), crop)
-        dataframes.append(dataframe)
-    intensities = []
-    plateMedian = []
-    for dataframe in dataframes:
-        intensities.extend(list(dataframe['Intensity']))
-        plateMedian.append(np.median(dataframe['Intensity']))
+                    inv = (hsvCrop[index[1][0]:index[1][1],
+                           index[0][0]:index[0][1]])[:, :, 0]
+                    inv = rescaleIntensity(inv, [getLevelRange(inv)[0], 255])
+                    invRange = getLevelRange(inv, 0)
+                    if invRange[1] - invRange[0] < 3:
+                        inv = np.zeros_like(inv, dtype=np.uint8)
+                    roi = cv2.bitwise_and(inv, inv, mask=hsvImage)
+                    if c=='1-B5':
+                        print('')
+                    roi[roi <= getLevelRange(roi,skipZero=True,percentile=.10)[0]] = 0
+                    areaImage = roi.copy()
+                    areaImage[areaImage > 0] = 1
+                    area = np.sum(areaImage)
+                    intensity = roi.copy()
+                    intensity = np.divide(intensity, np.subtract(256, intensity))
+                    outputIntensity.append(np.sum(intensity))
+                    outputArea.append(area)
+                    cv2.imwrite(os.path.join(outputPath, c + ".png"),  # outputPath + "/" + c + ".png",
+                                crop[index[1][0]:index[1][1], index[0][0]:index[0][1]])
+                    if debug:
+                        cv2.imwrite(os.path.join(outputPath, c) + "_final.png", roi)
+                        cv2.imwrite(os.path.join(outputPath, c) + "_preMask.png", inv)
+                        cv2.imwrite(os.path.join(outputPath, c) + "_mask.png", hsvImage)
+                    outputImage.append(os.path.join(name[0], c + ".png"))
+                else:
+                    outputArea.append(math.nan)
+                    outputIntensity.append(math.nan)
+                    outputPercent.append(0)
+                    outputImage.append(None)
+            outputIntensity = np.nan_to_num(
+                outputIntensity, nan=np.nanmin(outputIntensity))
+            outputArea=np.nan_to_num(outputArea,nan=-1)
+            dataframe["Intensity"] = outputIntensity
+            dataframe["Area"]=outputArea
+            dataframe["Image"] = outputImage
+            for i, p in enumerate(xpeaks):
+                if i % 4 == 0:
+                    cv2.line(crop, (p, 0),
+                             (p, crop.shape[1] - 1), (0, 0, 255), thickness=3)
+                else:
+                    cv2.line(crop, (p, 0),
+                             (p, crop.shape[1] - 1), (0, 0, 0), thickness=1)
+            for i, p in enumerate(ypeaks):
+                if i % 4 == 0:
+                    cv2.line(crop, (0, p),
+                             (crop.shape[1] - 1, p), (0, 0, 255), thickness=3)
+                else:
+                    cv2.line(crop, (0, p),
+                             (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
+            cv2.imwrite(imagePath, crop)
+            dataframes.append(dataframe)
+        intensities = []
+        area=[]
+        plateMedianArea=[]
+        plateMedian = []
+        for dataframe in dataframes:
+            intensities.extend(list(dataframe['Intensity']))
+            area.extend(list(dataframe['Area']))
+            plateMedianArea.append(np.median(dataframe['Area']))
+            plateMedian.append(np.median(dataframe['Intensity']))
+        median = np.median(plateMedian)
+        aMedian = np.median(plateMedianArea)
+        for dataframe in dataframes:
+            normalized = np.array(list(dataframe['Intensity'])) / median
+            # normalized = stats.zscore(normalized)
+            dataframe['Intensity'] = normalized.round(3)
+            normalized = np.array(list(dataframe['Area'])) / aMedian
+            # normalized = stats.zscore(normalized)
+            dataframe['Area']=normalized.round(3)
+            # detected = genOutputIntensity > activityThreshold
 
-    median = np.median(plateMedian)
-    for dataframe in dataframes:
-        normalized = np.array(list(dataframe['Intensity'])) / median
-        normalized = stats.zscore(normalized)
-        # detected = genOutputIntensity > activityThreshold
-        dataframe['Intensity'] = normalized
 
-    for dataframe, name in zip(dataframes, fileNames):
-        excelColumns = list(dataframe.columns)
-        excelColumns.remove('Image')
-        dataframe[excelColumns].to_excel(os.path.join(output_path, name[0]) + ".xlsx", index=False)
-
-        ################################################################
-        dataframe = main_add_cols(dataframe)  # COSMIN
-        ################################################################
-        activityThreshold = dataframe['EMP_EMP_Intensity'][0]
+        for dataframe, name in zip(dataframes, fileNames):
+            excelColumns = list(dataframe.columns)
+            excelColumns.remove('Image')
+            dataframe[excelColumns].to_excel(os.path.join(output_path, name[0]) + ".xlsx", index=False)
+        customDF=[dataframes[0][['Coordinate','TF1','TF2','Intensity','Area','Image']]]
+        if len(dataframe)>1:
+            customDF.extend(dataframe[['Intensity','Area','Image']] for dataframe in dataframes[1:])
+        dataframe=pd.concat(customDF,axis=1)
+        #Insert Additional rows
+        dataframe=addRows(dataframe)
+        #end
         dataframe.insert(0, 'Activated', [False for i in range(len(dataframe.index))])
+
+            # ################################################################
+            # dataframe = main_add_cols(dataframe)  # COSMIN
+            # ################################################################
+            # activityThreshold = dataframe['EMP_EMP_Intensity'][0]
+            # dataframe.insert(0, 'Activated', [False for i in range(len(dataframe.index))])
         opHtml = html.format(name[0], css,
-                             dataframe.to_html(escape=False,
-                                               formatters=dict(Activated=checkBoxGenerator, Image=imageTageGenerator,
-                                                               Intensity=getTruth,
-                                                               TF1_EMP_Image=imageTageGenerator,
-                                                               TF2_EMP_Image=imageTageGenerator,
-                                                               EMP_EMP_Image=imageTageGenerator)), javascript,
-                             downloadHTML)
-        file = open(os.path.join(output_path, '{}.html'.format(name[0])), "w")
+                             dataframe.to_html(header=False,escape=False,formatters=dict(Activated=checkBoxGenerator, Image=imageTageGenerator)).replace("<tbody>",headers+'\n<tbody>'), javascript,downloadHTML)
+        file = open(os.path.join(output_path, '{}.html'.format(name[0][:name[0].rfind('_')])), "w")
         file.write(opHtml)
         file.close()
 
@@ -572,8 +520,9 @@ def saveExtractedRows(path, extractedRows):
     htmlFile = open(path, 'r').read()
     htmlFile = bs.BeautifulSoup(htmlFile, 'html5lib')
     table = htmlFile.find_all('table')[0]
-    columns = [header.text for header in table.find('thead').find_all('th')]
-    rows = table.find_all('tr')
+    allColumns = [header.text for header in table.find('thead').find_all('th')]
+    columns=allColumns[allColumns.index('Index'):]
+    rows = table.find('tbody').find_all('tr')
     data = []
     for row in rows:
         drow = []
@@ -590,16 +539,15 @@ def saveExtractedRows(path, extractedRows):
         if len(drow) != 0:
             data.append(drow)
     testHTML = pd.DataFrame(data, columns=columns[1:])
-    columns = list(testHTML.columns)
-    columns.remove('Activated')
-    testHTML = testHTML[columns].iloc[extractedRows]
+    testHTML.drop('Activated', axis=1, inplace=True)
+    table.find(text='Activated').parent.extract()
+    headers = table.find('thead')
+    headers.findAll('th')[0]['colspan']=2
+    headers=str(headers)
+    testHTML = testHTML.iloc[extractedRows]
     opHtml = html.format(name, css,
-                         testHTML.to_html(escape=False,
-                                          formatters=dict(Image=imageTageGenerator,
-                                                          Intensity=getTruth,
-                                                          TF1_EMP_Image=imageTageGenerator,
-                                                          TF2_EMP_Image=imageTageGenerator,
-                                                          EMP_EMP_Image=imageTageGenerator)), "", "")
+                         testHTML.to_html(header=False,escape=False,
+                                          formatters=dict(Image=imageTageGenerator)).replace("<tbody>",headers+'\n<tbody>'), "", "")
     file = open(path[:-5] + '_Activated.html', "w")
     file.write(opHtml)
     file.close()

@@ -46,7 +46,7 @@
                 }
                 a {
                     text-decoration: none;
-                    color: #212121;
+                    color: white;
                     font-weight: 900;
                     font-size: 18px;
                 }
@@ -62,11 +62,11 @@
                 }
             </script>
         </head>
-        <body style="background-image:url(&quot;https://static.wixstatic.com/media/58e8d8_5fdbc4408a8c4d55bd8cf9607536a698~mv2_d_5841_4148_s_4_2.png/v1/fill/w_1920,h_1080,al_br,q_90,usm_0.66_1.00_0.01/58e8d8_5fdbc4408a8c4d55bd8cf9607536a698~mv2_d_5841_4148_s_4_2.webp&quot;);background-size: cover; background-attachment: fixed; background-repeat: no-repeat;font-family: 'Roboto', sans-serif;">
-            <a href="https://www.fuxmanlab.com/" target="_blank">
-                <h1 style="text-align: -webkit-center;">Fuxman Bass Lab</h1>
+        <body style="background-image: linear-gradient(to right top, #000000, #050505, #090909, #0d0d0d, #111111, #151515, #191919, #1d1d1d, #232323, #292929, #2f2f2f, #353535);background-size: cover; background-attachment: fixed; background-repeat: no-repeat;font-family: 'Roboto', sans-serif;">
+            <a style="text-align: center;color: white" href="https://www.fuxmanlab.com/" target="_blank">
+                <h1>Fuxman Bass Lab</h1>
             </a>
-            <form enctype="multipart/form-data" class="form-horizontal" action="createExperiment" method="post" style="background: rgba(255,255,255,0.89)">
+            <form enctype="multipart/form-data" class="form-horizontal" action="createExperiment" method="post" style="background: rgba(255,255,255,0.89);padding: 10px">
                 <fieldset
                     style="border:none;">
                     <!-- Form Name -->
@@ -107,7 +107,7 @@
                         <ul>
                             {% for file in files %}
                                 <a href="{{ '/display/' + file }}">
-                                    <li style="background: rgba(255,255,255,0.89);padding: 5px;box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;margin:10px;">{{ (request.path + '/' if request.path != '/' else '') + file }}</li>
+                                    <li style="background: #232323;padding: 5px;box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;margin:10px;">{{ (request.path + '/' if request.path != '/' else '') + file }}</li>
                                 </a>
                             {% endfor %}
                         </ul>
