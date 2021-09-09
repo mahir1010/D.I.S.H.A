@@ -11,6 +11,7 @@ from shutil import copyfile, rmtree
 import sklearn
 from sklearn import preprocessing
 import glob
+import urllib.parse as parse
 
 import os
 
@@ -124,7 +125,7 @@ function post() {
   form.action = '/download/extract/';
   inp=document.createElement('input');
   inp.type='text';
-  inp.value=window.location.href.split('display')[1];
+  inp.value=decodeURI(window.location.href.split('display')[1]);
   inp.name='title';
   form.appendChild(inp)
   data=document.getElementsByClassName("dataframe")[0];
@@ -279,12 +280,15 @@ def addRows(dataframe):
 
 header='<th>Intensity</th><th>Area</th><th>Image</th>'
 
-def process_yeast(output_path, excels_path, template1, template2,debug=False):
+def process_yeast(dir_path, excels_path, template1, template2, debug=False, extensions=['[jJ][pP][gG]','[pP][nN][gG]']):
     global activityThreshold
     # if len(sys.argv) == 1:
     #     print("Usage test.py <path_to_images>")
     #     exit(-1)
-    path = glob.glob(os.path.join(output_path, "*.JPG"))  # glob.glob(sys.argv[1] + "/*.JPG")
+    path=[]
+    output_path=os.path.join(dir_path,'output')
+    for ext in extensions:
+        path.extend(glob.glob(os.path.join(dir_path, "*.{}".format(ext))))  # glob.glob(sys.argv[1] + "/*.JPG")
     path.sort()
     df = pd.read_excel(excels_path, engine='openpyxl')
     # clusterPaths=[]
@@ -320,7 +324,7 @@ def process_yeast(output_path, excels_path, template1, template2,debug=False):
             # print(list(dataframe.columns))
             image = cv2.imread(imagePath)
             if image is None:
-                return -1, "Can't access image at " + output_path
+                return -1, "Can't access image at " + dir_path
             img = cv2.Canny(image, 20, 30)
             # cv2.imwrite(os.path.join(output_path, 'edge-detect.jpg'), img)#'edge-detect.jpg', img)
             # template1 = cv2.imread(os.path.join(output_path,'upperLeft.png'), 0)
@@ -365,7 +369,6 @@ def process_yeast(output_path, excels_path, template1, template2,debug=False):
             outputArea=[]
             hsvCrop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
             outputImage = []
-            Path(outputPath).mkdir(parents=True, exist_ok=True)
             # reference, refCols = getIndex("3-B7", xpeaks, ypeaks)
 
             for c in df["Coordinate"]:
@@ -461,7 +464,7 @@ def process_yeast(output_path, excels_path, template1, template2,debug=False):
                 else:
                     cv2.line(crop, (0, p),
                              (crop.shape[1] - 1, p), (0, 0, 0), thickness=1)
-            cv2.imwrite(imagePath, crop)
+            cv2.imwrite(os.path.join(output_path, name[0] + '_crop.png'), crop)
             dataframes.append(dataframe)
         intensities = []
         area=[]
@@ -511,12 +514,12 @@ def process_yeast(output_path, excels_path, template1, template2,debug=False):
     return 0, 'ok'
 
 
-def saveExtractedRows(path, extractedRows):
+def saveExtractedRows(path, extractedRows,root_dir=''):
     extractedRows.sort()
     name = path.split("/")[-1].split('.html')[0]
     path = path[:-1] if path[-1] == '?' else path
     path = path[1:] if path[0] == '/' else path
-    path = os.path.join("uploads", path)
+    path = os.path.join(root_dir, path)
     htmlFile = open(path, 'r').read()
     htmlFile = bs.BeautifulSoup(htmlFile, 'html5lib')
     table = htmlFile.find_all('table')[0]

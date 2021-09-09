@@ -6,7 +6,7 @@ import traceback
 import zipfile
 from io import BytesIO
 from pathlib import Path
-
+import sys
 import cv2
 import flask
 import requests
@@ -27,7 +27,10 @@ from Pipeline import process_yeast, saveExtractedRows
 BYPASS_LOGIN=True
 
 
-UPLOAD_FOLDER = "./uploads"
+UPLOAD_FOLDER = "./Experiments"
+
+if len(sys.argv)>1 and os.path.isdir(sys.argv[1]):
+    UPLOAD_FOLDER=sys.argv[1]
 
 template1 = cv2.imread('upperLeft.png', 0)
 template2 = cv2.imread('bottomRight.png', 0)
@@ -85,7 +88,7 @@ def home():
     if BYPASS_LOGIN:
         session['user']='bypassed'
     if 'user' in session:
-        files = os.listdir('./uploads')
+        files = os.listdir(UPLOAD_FOLDER)
         return flask.render_template('index.html', files=files)
     else:
         redirect_uri = flask.url_for('login', _external=True)
@@ -125,7 +128,8 @@ def logout():
 
 @app.route('/createExperiment', methods=['POST'])
 def createExperiment():
-    if 'user' not in session:
+    #
+    if True:
         return redirect("/")
     try:
         if request.method == 'POST':
@@ -176,7 +180,7 @@ def displayExperimentData(path):
     elif path.startswith('delete'):
         if request.form['password'] == "FuxmanBassLab":
             folder = path.split('/')[-1]
-            shutil.rmtree(os.path.join("uploads", folder), ignore_errors=True)
+            shutil.rmtree(os.path.join(UPLOAD_FOLDER, folder), ignore_errors=True)
             return flask.redirect('/')
         else:
             return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
@@ -191,11 +195,11 @@ def displayExperimentData(path):
                         rows.append(int(key))
                 if len(rows) == 0:
                     raise Exception("No Rows Selected")
-                saveExtractedRows(fileName, rows)
+                saveExtractedRows(fileName, rows,root_dir=UPLOAD_FOLDER)
                 return flask.redirect('/display' + request.values['title'])
             else:
                 if path.split('/')[-1] != '':
-                    folder = os.path.join("uploads", path.split('/')[-1])
+                    folder = os.path.join(path.split('/')[-1])
                     memory_file = BytesIO()
                     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
                         for root, dirs, files in os.walk(folder):
