@@ -302,6 +302,7 @@ def process_yeast(dir_path, excels_path, template1, template2, debug=False, exte
         baits[baitNo].append(file)
 
     for bait in baits.keys():
+        #Dynamically adding days to html table
         headers='<thead><tr>'+'<th colspan="3">Bait Number {}</th>'.format(bait)+'<th colspan="2">TF</th>'+''.join(['<th colspan="3">Day {}</th>'.format(name.split('_')[-1][0]) for name in baits[bait]])+'</tr>'+'<tr><th>Index</th><th>Activated</th><th>Coordinate</th><th>TF1</th><th>TF2</th>' + (header * len(baits[bait])) + '</tr></thead>'
         dataframes = []
         outputPaths = []
@@ -337,7 +338,7 @@ def process_yeast(dir_path, excels_path, template1, template2, debug=False, exte
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res1)
             bottom_right = np.add(max_loc, [0, 140])
             img = image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-            # cv2.imwrite(os.path.join(output_path, 'first crop.png'), img)
+
 
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             levelRange = getLevelRange(gray)
