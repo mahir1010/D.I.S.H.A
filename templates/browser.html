@@ -4,18 +4,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <style>
-        div{
-            padding:25px;
+        div {
+            padding: 25px;
             background: #232323;
             box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
         }
+
         input {
             height: 30px;
             border: none;
         }
-        form{
-            margin:10px 0px 10px 0px;
+
+        form {
+            margin: 10px 0px 10px 0px;
         }
+
         input[type=password] {
             background: #FFF;
             box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
@@ -23,47 +26,51 @@
             text-align: center;
             font-size: 18px;
         }
-        input[type=password]:focus{
-          border:solid 1px #03a9f4;
-          outline: none !important;
-         }
+
+        input[type=password]:focus {
+            border: solid 1px #03a9f4;
+            outline: none !important;
+        }
+
         a {
             text-decoration: none;
             color: white;
             font-weight: 900;
             font-size: 18px;
         }
+
         button {
             box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
             transition: 0.3s;
             border-radius: 2px;
             background-color: #03a9f4;
             border: none;
-            padding:5px 10px 5px 10px;
+            padding: 5px 10px 5px 10px;
         }
-        li:hover{
-            border:solid 1px #03a9f4;
+
+        li:hover {
+            border: solid 1px #03a9f4;
         }
     </style>
 </head>
 <body style="background-image: linear-gradient(to right top, #000000, #050505, #090909, #0d0d0d, #111111, #151515, #191919, #1d1d1d, #232323, #292929, #2f2f2f, #353535);background-size: cover; background-attachment: fixed;background-repeat: no-repeat;font-family: 'Roboto', sans-serif;">
-    <div>
-        <form action="/delete/{{ folderName }}" method="post">
+<div>
+    <form action="/delete/{{ folderName }}" method="post">
         <input id="password" name="password" type="password" placeholder="password" \>&nbsp;
-            <button id="submit" name="submit">Delete</button>
-            <br></form>
-            <form action="/download/{{ folderName }}" method="get">
-                <button id="download" name="Download">Download</button>
-            </form>
-    </div>
-            <ul style="padding:5px;">
-                {% for file in files %}
-                    
-                        <a href="{{ (request.path + '/' if request.path != '/' else '') + file }}">
-                            <li style="background: #232323;padding: 5px;box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;margin:10px;">{{ file }}</li>
-                        </a>
-                {% endfor %}
-            </ul>
-        </body>
-    </html>
+        <button id="submit" name="submit">Delete</button>
+        <br></form>
+    <form action="/download/{{ folderName }}" method="get">
+        <button id="download" name="Download">Download</button>
+    </form>
+</div>
+<ul style="padding:5px;">
+    {% for file in files %}
+
+        <a href="{{ (request.path + '/' if request.path != '/' else '') + file }}">
+            <li style="background: #232323;padding: 5px;box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;margin:10px;">{{ file }}</li>
+        </a>
+    {% endfor %}
+</ul>
+</body>
+</html>
 </body>

@@ -11,3 +11,13 @@ output
 test_coco.py
 test.py
 **/uploads/**
+dataset
+Experiments
+Model Weights
+temp
+templates
+test_images
+test-exp
+TestDataset
+*.log
+
