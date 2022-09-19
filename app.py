@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import sys
@@ -6,11 +5,11 @@ import traceback
 import zipfile
 from io import BytesIO
 from pathlib import Path
-import sys
+
 import cv2
 import flask
 import requests
-
+from flask import Flask, request, send_file, session, redirect, url_for
 from saml2 import (
     BINDING_HTTP_POST,
     BINDING_HTTP_REDIRECT,
@@ -19,18 +18,14 @@ from saml2 import (
 from saml2.client import Saml2Client
 from saml2.config import Config as Saml2Config
 
-from flask import Flask, request, send_file, session, redirect, url_for
-
 from Pipeline import process_yeast, saveExtractedRows
 
-
-BYPASS_LOGIN=True
-
+BYPASS_LOGIN = True
 
 UPLOAD_FOLDER = "./Experiments"
 
-if len(sys.argv)>1 and os.path.isdir(sys.argv[1]):
-    UPLOAD_FOLDER=sys.argv[1]
+if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]):
+    UPLOAD_FOLDER = sys.argv[1]
 
 template1 = cv2.imread('upperLeft.png', 0)
 template2 = cv2.imread('bottomRight.png', 0)
@@ -38,7 +33,8 @@ template2 = cv2.imread('bottomRight.png', 0)
 app = Flask("DHY1H-Analyzer")
 app.config['SECRET_KEY'] = "TESTKEY".encode('utf-8') or os.urandom(24)
 
-metadata_URL="https://shib-test.bu.edu/idp/shibboleth"
+metadata_URL = "https://shib-test.bu.edu/idp/shibboleth"
+
 
 def saml_client():
     acs_url = url_for(
@@ -58,7 +54,7 @@ def saml_client():
     settings = {
         'metadata': {
             'inline': [rv.text],
-            },
+        },
         'service': {
             'sp': {
                 'endpoints': {
@@ -83,10 +79,11 @@ def saml_client():
     saml_client = Saml2Client(config=spConfig)
     return saml_client
 
+
 @app.route("/")
 def home():
     if BYPASS_LOGIN:
-        session['user']='bypassed'
+        session['user'] = 'bypassed'
     if 'user' in session:
         files = os.listdir(UPLOAD_FOLDER)
         return flask.render_template('index.html', files=files)
@@ -97,7 +94,7 @@ def home():
 
 @app.route("/saml/login")
 def login():
-    client=saml_client()
+    client = saml_client()
     reqid, info = client.prepare_for_authenticate()
     redirect_url = None
     for key, value in info['headers']:
@@ -108,6 +105,7 @@ def login():
     response.headers['Pragma'] = 'no-cache'
     return response
 
+
 @app.route("/saml/sso/", methods=['POST'])
 def idp_response():
     client = saml_client()
@@ -116,9 +114,10 @@ def idp_response():
         entity.BINDING_HTTP_POST)
     authn_response.get_identity()
     user_info = authn_response.get_subject()
-    session['user']=user_info.text
-    session['saml_attributes']=authn_response.ava
+    session['user'] = user_info.text
+    session['saml_attributes'] = authn_response.ava
     return redirect(url_for('home'))
+
 
 @app.route('/logout')
 def logout():
@@ -129,20 +128,22 @@ def logout():
 @app.route('/createExperiment', methods=['POST'])
 def createExperiment():
     #
-    if True:
-        return redirect("/")
+    # if True:
+    #     return redirect("/")
     try:
         if request.method == 'POST':
             experimentName = request.form['experimentName']
             if Path(os.path.join(UPLOAD_FOLDER, experimentName)).exists():
                 raise FileExistsError("Experiment already exists")
-            Path(os.path.join(UPLOAD_FOLDER, experimentName)).mkdir(parents=True, exist_ok=False)
+            Path(os.path.join(UPLOAD_FOLDER, experimentName)).mkdir(
+                parents=True, exist_ok=False)
             output_path = os.path.join(UPLOAD_FOLDER, experimentName)
             excel = request.files['excelFileButton']
             excel.save(os.path.join(output_path, excel.filename))
             for images in request.files.getlist("imagesButton"):
                 images.save(os.path.join(output_path, images.filename))
-            status, msg = process_yeast(output_path, os.path.join(output_path, excel.filename), template1, template2)
+            status, msg = process_yeast(output_path, os.path.join(
+                output_path, excel.filename), template1, template2)
             if status == -1:
                 raise Exception(msg)
             else:
@@ -150,8 +151,9 @@ def createExperiment():
         else:
             raise Exception("redirecting to home")
     except Exception as err:
-        if type(err)!=FileExistsError:
-            shutil.rmtree(os.path.join(UPLOAD_FOLDER, experimentName), ignore_errors=True)
+        if type(err) != FileExistsError:
+            shutil.rmtree(os.path.join(
+                UPLOAD_FOLDER, experimentName), ignore_errors=True)
         print(err)
         return '''<html><head><meta http-equiv="refresh" content="10;url=/" /> </head><body>{}</body></html>'''.format(
             err)
@@ -180,7 +182,8 @@ def displayExperimentData(path):
     elif path.startswith('delete'):
         if request.form['password'] == "FuxmanBassLab":
             folder = path.split('/')[-1]
-            shutil.rmtree(os.path.join(UPLOAD_FOLDER, folder), ignore_errors=True)
+            shutil.rmtree(os.path.join(UPLOAD_FOLDER, folder),
+                          ignore_errors=True)
             return flask.redirect('/')
         else:
             return '''<html><head><meta http-equiv="refresh" content="3;url=/" /> </head><body>{}</body></html>'''.format(
@@ -195,7 +198,7 @@ def displayExperimentData(path):
                         rows.append(int(key))
                 if len(rows) == 0:
                     raise Exception("No Rows Selected")
-                saveExtractedRows(fileName, rows,root_dir=UPLOAD_FOLDER)
+                saveExtractedRows(fileName, rows, root_dir=UPLOAD_FOLDER)
                 return flask.redirect('/display' + request.values['title'])
             else:
                 if path.split('/')[-1] != '':
@@ -207,7 +210,8 @@ def displayExperimentData(path):
                                 zipf.write(os.path.join(root, file))
                     memory_file.seek(0)
                     return send_file(memory_file,
-                                     attachment_filename=(path.split('/')[-1]) + '.zip',
+                                     attachment_filename=(
+                                                             path.split('/')[-1]) + '.zip',
                                      as_attachment=True)
                 else:
                     raise Exception("Invalid path")
