@@ -12,6 +12,8 @@ from Image import Image
 from SegmentationModel import SegmentationModel
 from utils import *
 
+BATCH_SIZE = 30
+
 css = '''
 body{
       --textC: 245,245,245;
@@ -325,7 +327,7 @@ def export_grid_image(imageObject: Image):
 def analyze_image(imageObject: Image, model: SegmentationModel):
     gray = cv2.cvtColor(imageObject.image, cv2.COLOR_RGB2GRAY)
     gray = cv2.bitwise_not(gray)
-    mask = model.predict(imageObject.image, 20)
+    mask = model.predict(imageObject.image, BATCH_SIZE)
     mask = cv2.medianBlur(mask, 5)
     mask = cv2.GaussianBlur(mask, (3, 3), 1.5)
     imageObject.intensity_map = mask
