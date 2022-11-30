@@ -1,7 +1,8 @@
-Flask
-opencv_python
-pandas
-matplotlib
-numpy
-scipy
-scikit_learn
+beautifulsoup4==4.11.1
+imutils==0.5.4
+matplotlib==3.6.2
+numpy==1.23.5
+pandas==1.5.2
+Pillow==9.3.0
+segmentation_models==1.0.1
+tensorflow==2.11.0
