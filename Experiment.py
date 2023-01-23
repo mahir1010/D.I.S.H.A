@@ -17,6 +17,35 @@ def convert_index_to_plate(coords):
     return f'{base - 3}-{base}'
 
 
+def _generate_normalization_fn(normalization_type, intensities: np.ndarray, areas: np.ndarray, ignore_zero_values):
+    fn_intensity = lambda x: x
+    fn_area = lambda x: x
+    if normalization_type == "Percent":
+        min_val_intensity = intensities.min()
+        max_val_intensity = intensities.max()
+        min_val_area = areas.min()
+        max_val_area = areas.max()
+        fn_intensity = lambda x: round((x - min_val_intensity) / (max_val_intensity - min_val_intensity) * 100,
+                                       2) if x != 0 or not ignore_zero_values else 0
+        fn_area = lambda x: round((x - min_val_area) / (max_val_area - min_val_area) * 100,
+                                  2) if x != 0 or not ignore_zero_values else 0
+
+    elif normalization_type == "Z-Score":
+        mean_intensity = np.mean(intensities)
+        sd_intensity = np.std(intensities)
+        mean_area = np.mean(areas)
+        sd_area = np.std(areas)
+        fn_intensity = lambda x: round((x - mean_intensity) / sd_intensity,
+                                       2) if x != 0 or not ignore_zero_values else 0
+        fn_area = lambda x: round((x - mean_area) / sd_area, 2) if x != 0 or not ignore_zero_values else 0
+    elif normalization_type == "Min-Offset":
+        min_intensity = intensities[intensities > 0].min()
+        min_area = areas[areas > 0].min()
+        fn_intensity = lambda x: round(x - min_intensity,2) if x != 0 else 0
+        fn_area = lambda x: round(x - min_area,2) if x != 0 else 0
+    return fn_intensity, fn_area
+
+
 class Experiment:
 
     def __init__(self, bait, images, datasheet, base_path, initialize=True):
@@ -27,7 +56,8 @@ class Experiment:
             self.datasheet = pd.read_excel(datasheet, engine='openpyxl')
             self.datasheet['plate'] = self.datasheet['Coordinate'].apply(lambda x: convert_index_to_plate(x))
             self.images = [
-                Image(image, self.output_path, self.datasheet[self.datasheet['plate'] == extract_plate_name(os.path.basename(image))]) for
+                Image(image, self.output_path,
+                      self.datasheet[self.datasheet['plate'] == extract_plate_name(os.path.basename(image))]) for
                 image in images]
         else:
             self.datasheet = datasheet
@@ -71,73 +101,77 @@ class Experiment:
         for image, empty_coordinate in zip(self.images, empty_coordinates):
             image.generate_evaluation_table(empty_coordinate)
 
-    def normalize_data(self, normalization_type="Percent", ignore_zero_values=True):
+    def normalize_data(self, normalization_type="Percent", intensity_column=True, area_column=True,
+                       ignore_zero_values=True, per_plate=False):
+        if not intensity_column and not area_column:
+            return
         intensities = []
         areas = []
+        if not per_plate:
+            for image in self.images:
+                if image.exception_occurred:
+                    continue
+                image.dataframe.reset_index(drop=True, inplace=True)
+                image.raw_dataframe.reset_index(drop=True, inplace=True)
+                intensities.extend(image.raw_dataframe['Intensity'].tolist())
+                areas.extend(image.raw_dataframe['Area'].tolist())
+            intensities = np.array(intensities)
+            areas = np.array(areas)
+            if ignore_zero_values:
+                intensities = intensities[intensities != 0]
+                areas = areas[areas != 0]
+            fn_intensity, fn_area = _generate_normalization_fn(normalization_type, intensities, areas,
+                                                               ignore_zero_values)
         for image in self.images:
             if image.exception_occurred:
                 continue
-            image.dataframe.reset_index(drop=True, inplace=True)
-            image.raw_dataframe.reset_index(drop=True, inplace=True)
-            intensities.extend(image.raw_dataframe['Intensity'].tolist())
-            areas.extend(image.raw_dataframe['Area'].tolist())
-        intensities = np.array(intensities)
-        areas = np.array(areas)
-        if ignore_zero_values:
-            intensities = intensities[intensities != 0]
-            areas = areas[areas != 0]
-        fn_intensity = lambda x: x
-        fn_area = lambda x: x
-        if normalization_type == "Percent":
-            min_val_intensity = intensities.min()
-            max_val_intensity = intensities.max()
-            min_val_area = areas.min()
-            max_val_area = areas.max()
-            fn_intensity = lambda x: round((x - min_val_intensity) / (max_val_intensity - min_val_intensity) * 100,
-                                           2) if x != 0 or not ignore_zero_values else np.nan
-            fn_area = lambda x: round((x - min_val_area) / (max_val_area - min_val_area) * 100, 2) if x != 0 or not ignore_zero_values else np.nan
-
-        elif normalization_type == "Z-Score":
-            mean_intensity = np.mean(intensities)
-            sd_intensity = np.std(intensities)
-            mean_area = np.mean(areas)
-            sd_area = np.std(areas)
-            fn_intensity = lambda x: round((x - mean_intensity) / sd_intensity, 2) if x != 0 or not ignore_zero_values else np.nan
-            fn_area = lambda x: round((x - mean_area) / sd_area, 2) if x != 0 or not ignore_zero_values else np.nan
-
-        for image in self.images:
-            image.dataframe['Intensity'] = image.raw_dataframe['Intensity'].apply(fn_intensity)
-            image.dataframe['Area'] = image.raw_dataframe['Area'].apply(fn_area)
+            if per_plate:
+                image.dataframe.reset_index(drop=True, inplace=True)
+                image.raw_dataframe.reset_index(drop=True, inplace=True)
+                intensities = np.array(image.raw_dataframe['Intensity'].tolist())
+                areas = np.array(image.raw_dataframe['Area'].tolist())
+                if ignore_zero_values:
+                    intensities = intensities[intensities != 0]
+                    areas = areas[areas != 0]
+                if len(intensities)==0 or len(areas)==0:
+                    continue
+                fn_intensity, fn_area = _generate_normalization_fn(normalization_type, intensities, areas,
+                                                                   ignore_zero_values)
+            if intensity_column:
+                image.dataframe['Intensity'] = image.raw_dataframe['Intensity'].apply(fn_intensity)
+            if area_column:
+                image.dataframe['Area'] = image.raw_dataframe['Area'].apply(fn_area)
             image.generate_evaluation_table(image.reference_coords)
 
-    def generate_heatmap(self,files=[]):
-        assert type(files)==list
+    def generate_heatmap(self, files=[]):
+        assert type(files) == list
         target_images = []
         for image in self.images:
             if image.name in files:
                 target_images.append(image)
-        transcription_factor_1=[]
+        transcription_factor_1 = []
         transcription_factor_2 = []
         for image in target_images:
             transcription_factor_1.extend(image.raw_dataframe['TF1'].unique().tolist())
             transcription_factor_2.extend(image.raw_dataframe['TF2'].unique().tolist())
         transcription_factor_1 = list(set(transcription_factor_1))
-        transcription_factor_1 = [tf for tf in transcription_factor_1 if type(tf)==str]
+        transcription_factor_1 = [tf for tf in transcription_factor_1 if type(tf) == str]
         transcription_factor_2 = list(set(transcription_factor_2))
-        transcription_factor_2 = [tf for tf in transcription_factor_2 if type(tf)==str]
-        heatmap_intensity = np.zeros((len(transcription_factor_1),len(transcription_factor_2)))
-        heatmap_area = np.zeros((len(transcription_factor_1),len(transcription_factor_2)))
+        transcription_factor_2 = [tf for tf in transcription_factor_2 if type(tf) == str]
+        heatmap_intensity = np.zeros((len(transcription_factor_1), len(transcription_factor_2)))
+        heatmap_area = np.zeros((len(transcription_factor_1), len(transcription_factor_2)))
         for row in range(len(transcription_factor_2)):
             for column in range(len(transcription_factor_1)):
                 intensity = 0
                 area = 0
                 for image in target_images:
-                    data = image.get_details_tf(transcription_factor_1[column],transcription_factor_2[row])
-                    intensity+=data[0]
-                    area+=data[1]
-                heatmap_intensity[column][row] = round(intensity/len(target_images),3)
+                    data = image.get_details_tf(transcription_factor_1[column], transcription_factor_2[row])
+                    intensity += data[0]
+                    area += data[1]
+                heatmap_intensity[column][row] = round(intensity / len(target_images), 3)
                 heatmap_area[column][row] = round(area / len(target_images), 3)
-        return transcription_factor_1,transcription_factor_2,heatmap_intensity,heatmap_area
+        return transcription_factor_1, transcription_factor_2, heatmap_intensity, heatmap_area
+
 
 def export_experiment(experiment, single_file=True):
     if single_file:

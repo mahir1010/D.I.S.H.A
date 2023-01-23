@@ -3,9 +3,9 @@ import sys
 from datetime import datetime
 
 from Pipeline import *
-from utils import extract_bait_number
+from utils import extract_bait_number,extensions
 
-extensions = ['[jJ][pP][gG]', '[pP][nN][gG]']
+
 
 now = datetime.now()
 

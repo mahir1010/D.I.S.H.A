@@ -1,6 +1,8 @@
 import math
 
 import numpy as np
+import re
+import os
 
 row2IndexMap = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9, 'K': 10, 'L': 11}
 Index2rowMap = {v: k for k, v in row2IndexMap.items()}
@@ -9,6 +11,14 @@ STATIC_HEADER = '<thead><tr>' + '<th colspan="4">Bait Number {0}</th>' + '<th co
                 '<th colspan="3">TF1-Empty</th>' + '<th colspan="3">TF2-Empty</th>' + '<th colspan="3">Empty-Empty</th>' \
                 + '</tr>' + '<tr><th>Activated</th><th>Coordinate</th><th>TF1</th><th>TF2</th>' \
                 + '<th>Intensity</th><th>Area</th><th>Image</th>' * 4 + '</tr></thead>'
+
+name_regex = re.compile(r"[a-zA-Z0-9-]+_[a-zA-Z0-9]+\-\d+_\d+-\d+_[\w]+")
+extensions = ['[jJ][pP][gG]', '[pP][nN][gG]']
+coordinate_regex = re.compile(r'\d\d-[a-zA-Z]{1}\d\d')
+
+def verify_image_name(image_name):
+    # Expects complete path to the image
+    return name_regex.fullmatch(os.path.split(image_name)[1].split('.')[0])
 
 
 def extract_bait_number(file_name):

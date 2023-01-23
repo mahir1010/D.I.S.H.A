@@ -108,16 +108,25 @@ class Image:
     def __str__(self):
         return self.name
 
-    def generate_evaluation_table(self,empty_coordinate):
+    def generate_evaluation_table(self, empty_coordinate):
         if self.exception_occurred:
             return
-        self.reference_coords=empty_coordinate
+        self.reference_coords = empty_coordinate
         dataframe = self.dataframe
+        dataframe.reset_index(drop=True, inplace=True)
         if empty_coordinate == '':
-            empty = dataframe.loc[(dataframe['TF2'] == "empty") & (dataframe['TF1'] == "empty")].iloc[0]
+            empty_locations = dataframe.loc[(dataframe['TF2'] == "empty") & (dataframe['TF1'] == "empty")]
+            empty_locations.sort_values(by=['Intensity'],inplace=True,ascending=False)
         else:
-            empty = dataframe.loc[dataframe['Coordinate'] == empty_coordinate]
+            empty_locations = dataframe.loc[dataframe['Coordinate'] == empty_coordinate]
+        empty_empty_rs = (empty_locations['Intensity'] * empty_locations['Area']).mean()
+
+        empty = empty_locations.iloc[0]
+        # dataframe['RS']=dataframe.apply(lambda row: (row['Intensity']*row['Area'])-empty_empty_rs if row['Intensity']!=0 else 0)
         target_df = dataframe.loc[(dataframe['TF2'] != "empty") & (dataframe['TF1'] != "empty")].copy(deep=True)
+        target_df['Coop_Index'] = 0
+        target_df['Antagonism_1'] = 0
+        target_df['Antagonism_2'] = 0
         target_df['tf1empty_intensity'] = target_df['Intensity']
         target_df['tf1empty_area'] = target_df['Area']
         target_df['tf1empty_image'] = target_df['Image']
@@ -138,7 +147,9 @@ class Image:
             if len(dataframe.loc[(dataframe['TF2'] == "empty") & (dataframe['TF1'] == row['TF1'])]) == 0:
                 print("Potential Error:", row)
                 continue
+            tf1_tf2_rs = (row['Intensity'] * row['Area']) - empty_empty_rs if row['Intensity']!=0 else 0
             temp = dataframe.loc[(dataframe['TF2'] == "empty") & (dataframe['TF1'] == row['TF1'])].iloc[0]
+            tf1_empty_rs = (temp['Intensity'] * temp['Area']) - empty_empty_rs
             target_df.loc[index, 'tf1empty_intensity'] = temp['Intensity']
             target_df.loc[index, 'tf1empty_area'] = temp['Area']
             target_df.loc[index, 'tf1empty_image'] = temp['Image']
@@ -146,20 +157,32 @@ class Image:
                 print("Potential Error:", row)
                 continue
             temp = dataframe.loc[(dataframe['TF1'] == "empty") & (dataframe['TF2'] == row['TF2'])].iloc[0]
+            tf2_empty_rs = (temp['Intensity'] * temp['Area']) - empty_empty_rs
             target_df.loc[index, 'tf2empty_intensity'] = temp['Intensity']
             target_df.loc[index, 'tf2empty_area'] = temp['Area']
             target_df.loc[index, 'tf2empty_image'] = temp['Image']
+            target_df.loc[index, 'Coop_Index'] = round(tf1_tf2_rs - tf1_empty_rs - tf2_empty_rs, 2)
+            target_df.loc[index, 'Antagonism_1'] = round(tf1_empty_rs - tf1_tf2_rs, 2)
+            target_df.loc[index, 'Antagonism_2'] = round(tf2_empty_rs - tf1_tf2_rs, 2)
         if self.display_dataframe is None or 'Activated' not in self.display_dataframe:
             target_df.insert(0, 'Activated', [False for i in range(len(target_df.index))])
         else:
             target_df.insert(0, 'Activated', self.display_dataframe['Activated'].tolist())
+        # target_df['Coop_Index'] = (2 * ((target_df['Coop_Index'] - target_df['Coop_Index'].min()) / (
+        #             target_df['Coop_Index'].max() - target_df['Coop_Index'].min())) - 1).round(2)
+        # target_df['Antagonism_1'] = (2 * ((target_df['Antagonism_1'] - target_df['Antagonism_1'].min()) / (
+        #         target_df['Antagonism_1'].max() - target_df['Antagonism_1'].min())) - 1).round(2)
+        # target_df['Antagonism_2'] = (2 * ((target_df['Antagonism_2'] - target_df['Antagonism_2'].min()) / (
+        #         target_df['Antagonism_2'].max() - target_df['Antagonism_2'].min())) - 1).round()
+
         self.display_dataframe = target_df
         self.display_dataframe.reset_index(drop=True, inplace=True)
         self.dataframe.reset_index(drop=True, inplace=True)
 
-    def get_details_tf(self,tf1,tf2):
-        data = self.dataframe.loc[(self.dataframe['TF1'] == tf1) & (self.dataframe['TF2'] == tf2),['Intensity', 'Area']].values
-        if len(data)>0:
+    def get_details_tf(self, tf1, tf2):
+        data = self.dataframe.loc[
+            (self.dataframe['TF1'] == tf1) & (self.dataframe['TF2'] == tf2), ['Intensity', 'Area']].values
+        if len(data) > 0:
             return data[0]
         else:
-            return [0,0]
+            return [0, 0]
