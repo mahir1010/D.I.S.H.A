@@ -48,7 +48,7 @@ We provide our model weights and sample data [here](https://drive.google.com/dri
 3. Activate conda environment and execute ```disha-verify <path to experiment fodler>``` to verfiy files.
 4. Execute ```disha-analyzer <path to root experiment folder> <path to model weights> <batch size>``` to process the data.
 5. The software will crawl all the subfolders and execute the processing pipeline if it does not contain the 'output' folder.
-6. The output files will have the extension ```.dhy1h```. You will need to use <a href = "https://mahir1010.github.io/DHY1H-Viewer/">DHY1H Viewer</a> for visualizing the data.
+6. The output files will have the extension ```.dhy1h```. You will need to use <a href = "https://mahir1010.github.io/D.I.S.H.A-viewer/">DHY1H Viewer</a> for visualizing the data.
 
 ## Results
 ### Raw Image
