@@ -65,7 +65,7 @@ def disha_analyzer():
     experiments = list(experiments.values())
 
     for experiment in experiments:
-        process_yeast(experiment,model_weights,batch_size=batch_size)
+        process_experiment(experiment, model_weights, batch_size=batch_size)
 
 if __name__=="__main__":
     disha_analyzer()
