@@ -24,7 +24,7 @@ Install and setup Anaconda distribution following the instructions from the [off
 Create an environment called disha with pyside2 and python (version 3.10)
 
 ```bash
-conda create -n disha pyside2 python = 3.10
+conda create -n disha pyside2 python=3.10
 conda activate disha
 ```
 
