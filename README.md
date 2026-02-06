@@ -1,4 +1,4 @@
-# Detection of Interactions Software for High-throughput Analysis [[Paper](https://www.nature.com/articles/s41467-023-42445-6)]
+# `D`etection of `I`nteractions: `S`oftware for `H`igh-throughput `A`nalysis [[Paper](https://www.nature.com/articles/s41467-023-42445-6)]
 
 An automated tool to detect and analyze yeast-based assays to learn more about transcriptional regulation in immune
 responses and cancer.
