@@ -1,4 +1,4 @@
-# Detection of Interactions Software for High-throughput Analysis
+# `D`etection of `I`nteractions: `S`oftware for `H`igh-throughput `A`nalysis [[Paper](https://www.nature.com/articles/s41467-023-42445-6)]
 
 An automated tool to detect and analyze yeast-based assays to learn more about transcriptional regulation in immune
 responses and cancer.
@@ -24,7 +24,7 @@ Install and setup Anaconda distribution following the instructions from the [off
 Create an environment called disha with pyside2 and python (version 3.10)
 
 ```bash
-conda create -n disha pyside2 python = 3.10
+conda create -n disha pyside2 python=3.10
 conda activate disha
 ```
 
